@@ -87,6 +87,8 @@ declare -A sigalgs_fallback
 # array with preferred sigalgs for aRSA and aECDSA ciphers
 declare -a sigalgs_preferred_rsa
 declare -a sigalgs_preferred_ecdsa
+renegotiation=""
+compression=""
 
 # because running external commands like sleep incurs a fork penalty, we
 # first check if it is necessary
@@ -174,6 +176,8 @@ parse_openssl_output() {
     current_pubkey=0
     current_trusted="False"
     current_sigalg="None"
+    current_renegotiation="False"
+    current_compression=""
 
     certs_found=0
     current_raw_certificates=()
@@ -201,6 +205,19 @@ parse_openssl_output() {
             local match=($line)
             current_cipher="${match[4]}"
             continue
+        fi
+
+        # renegotiation support
+        if [[ $line =~ Secure\ Renegotiation\ IS\ supported ]]; then
+            current_renegotiation="secure"
+        fi
+        if [[ $line =~ Secure\ Renegotiation\ IS\ NOT\ supported ]]; then
+            current_renegotiation="insecure"
+        fi
+
+        # compression settings
+        if [[ $line =~ Compression:\ (.*) ]]; then
+            current_compression="${BASH_REMATCH[1]}"
         fi
 
         # extract the signing algorithm used in TLSv1.2 ephemeral kex
@@ -562,6 +579,20 @@ display_results_in_terminal() {
     else
         echo "Client side cipher ordering"
     fi
+    if [[ $renegotiation ]]; then
+        if [[ $renegotiation == "secure" ]]; then
+            echo "Server supports secure renegotiation"
+        else
+            echo "Server DOESN'T support secure renegotiation"
+        fi
+    else
+        echo "Renegotiation test error"
+    fi
+    if [[ $compression ]]; then
+        echo "Server supported compression methods: $compression"
+    else
+        echo "Supported compression methods test error"
+    fi
 
     if [[ $TEST_CURVES == "True" ]]; then
         if [[ -n $supported_curves ]]; then
@@ -665,6 +696,18 @@ display_results_in_json() {
         ctr=$((ctr+1))
     done
     echo -n ']'
+
+    if [[ $renegotiation ]]; then
+        echo ",\"renegotiation\":\"$renegotiation\""
+    else
+        echo ",\"renegotiation\":\"False\""
+    fi
+
+    if [[ $compression ]]; then
+        echo ",\"compression\":\"$compression\""
+    else
+        echo ",\"compression\":\"False\""
+    fi
 
     if [[ -n $supported_curves ]]; then
         echo -n ","
@@ -1051,6 +1094,16 @@ test_tls_tolerance() {
                 tls_tolerance[$version]="False"
         else
             tls_tolerance[$version]="True $current_protocol $current_cipher $current_trusted"
+
+            # collect renegotiation info
+            if [[ $current_renegotiation != "False" ]]; then
+                renegotiation="$current_renegotiation"
+            fi
+
+            # collect compression info
+            if [[ $version == "big-TLSv1.2" || -z $compression ]]; then
+                compression="$current_compression"
+            fi
         fi
     done
 
