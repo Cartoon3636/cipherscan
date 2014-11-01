@@ -79,6 +79,8 @@ ocspstaple = defaultdict(int)
 fallbacks = defaultdict(int)
 pfssigalgfallback = defaultdict(int)
 pfssigalgs = defaultdict(int)
+compression = defaultdict(int)
+renegotiation = defaultdict(int)
 dsarsastack = 0
 total = 0
 for r,d,flist in os.walk(path):
@@ -100,6 +102,8 @@ for r,d,flist in os.walk(path):
         tempcipherstats = {}
         temppfssigalgfallback = {}
         temppfssigalgs = {}
+        tempcompression = {}
+        temprenegotiation = {}
         ciphertypes = 0
         AESGCM = False
         AES = False
@@ -211,6 +215,13 @@ for r,d,flist in os.walk(path):
                     results['configs']['big-TLSv1.1']['tolerant'] == "False" and \
                     results['configs']['big-TLSv1.2']['tolerant'] == "False":
                         tempfallbacks['big-TLSv1.0 or big-SSLv3 Only tolerant'] = 1
+
+            """ get some extra data about server """
+            if 'renegotiation' in results:
+                temprenegotiation[results['renegotiation']] = 1
+
+            if 'compression' in results:
+                tempcompression[results['compression']] = 1
 
             """ loop over list of ciphers """
             for entry in results['ciphersuite']:
@@ -406,6 +417,12 @@ for r,d,flist in os.walk(path):
 
         for s in tempsigstats:
             sigalg[s] += 1
+
+        for s in temprenegotiation:
+            renegotiation[s] += 1
+
+        for s in tempcompression:
+            compression[s] += 1
 
         if len(tempticketstats) == 1:
             for s in tempticketstats:
@@ -641,6 +658,18 @@ print("------------------------------+---------+--------")
 for stat in sorted(pfssigalgfallback):
     percent = round(pfssigalgfallback[stat] / total * 100, 4)
     sys.stdout.write(stat.ljust(30) + " " + str(pfssigalgfallback[stat]).ljust(10) + str(percent).ljust(9) + "\n")
+
+print("\nRenegotiation             Count     Percent ")
+print("-------------------------+---------+--------")
+for stat in natural_sort(renegotiation):
+    percent = round(renegotiation[stat] / total * 100, 4)
+    sys.stdout.write(stat.ljust(25) + " " + str(renegotiation[stat]).ljust(10) + str(percent).ljust(9) + "\n")
+
+print("\nCompression               Count     Percent ")
+print("-------------------------+---------+--------")
+for stat in natural_sort(compression):
+    percent = round(compression[stat] / total * 100, 4)
+    sys.stdout.write(stat.ljust(25) + " " + str(compression[stat]).ljust(10) + str(percent).ljust(9) + "\n")
 
 print("\nTLS session ticket hint   Count     Percent ")
 print("-------------------------+---------+--------")
