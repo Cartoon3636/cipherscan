@@ -76,6 +76,7 @@ eccfallback = defaultdict(int)
 eccordering = defaultdict(int)
 ecccurve = defaultdict(int)
 ocspstaple = defaultdict(int)
+fallbacks = defaultdict(int)
 dsarsastack = 0
 total = 0
 for r,d,flist in os.walk(path):
@@ -92,6 +93,7 @@ for r,d,flist in os.walk(path):
         tempeccfallback = "unknown"
         tempeccordering = "unknown"
         tempecccurve = {}
+        tempfallbacks = {}
         """ supported ciphers by the server under scan """
         tempcipherstats = {}
         ciphertypes = 0
@@ -143,8 +145,18 @@ for r,d,flist in os.walk(path):
             except ValueError:
                 continue
 
+
             """ discard files with empty results """
             if len(results['ciphersuite']) < 1:
+                # if there are no results from regular scan but there are
+                # from fallback attempts that means that the scan of a host
+                # is inconclusive
+                if 'configs' in results:
+                    for entry in results['configs']:
+                        config = results['configs'][entry]
+                        if config['tolerant'] == "True" and \
+                                config['trusted'] == "True":
+                            fallbacks['inconclusive ' + entry] += 1
                 continue
 
             """ save ECC curve stats """
@@ -157,6 +169,23 @@ for r,d,flist in os.walk(path):
                     tempecccurve[curve] = 1
                 if len(results['curve']) == 1:
                     tempecccurve[curve + ' Only'] = 1
+
+            if 'configs' in results:
+                for entry in results['configs']:
+                    config = results['configs'][entry]
+                    if config['tolerant'] == "True":
+                        tempfallbacks[entry + " tolerant"] = 1
+                    else:
+                        tempfallbacks[entry + " intolerant"] = 1
+                if results['configs']['big-SSLv3']['tolerant'] == "True" and \
+                    results['configs']['big-TLSv1.0']['tolerant'] == "False" and \
+                    results['configs']['big-TLSv1.1']['tolerant'] == "False" and \
+                    results['configs']['big-TLSv1.2']['tolerant'] == "False":
+                        tempfallbacks['big-SSLv3 Only tolerant'] = 1
+                if results['configs']['big-TLSv1.0']['tolerant'] == "True" and \
+                    results['configs']['big-TLSv1.1']['tolerant'] == "False" and \
+                    results['configs']['big-TLSv1.2']['tolerant'] == "False":
+                        tempfallbacks['big-TLSv1.0 or big-SSLv3 Only tolerant'] = 1
 
             """ loop over list of ciphers """
             for entry in results['ciphersuite']:
@@ -336,6 +365,9 @@ for r,d,flist in os.walk(path):
                             if 'RC4' in cipher:
                                 client_RC4_Pref[client_name] = True
                             break
+
+        for s in tempfallbacks:
+            fallbacks[s] += 1
 
         for s in tempsigstats:
             sigalg[s] += 1
@@ -589,3 +621,9 @@ print("-------------------------+---------+-------")
 for stat in sorted(protocolstats):
     percent = round(protocolstats[stat] / total * 100, 4)
     sys.stdout.write(stat.ljust(25) + " " + str(protocolstats[stat]).ljust(10) + str(percent).ljust(4) + "\n")
+
+print("\nRequired fallbacks                       Count     Percent")
+print("----------------------------------------+---------+-------")
+for stat in sorted(fallbacks):
+    percent = round(fallbacks[stat] / total * 100, 4)
+    sys.stdout.write(stat.ljust(40) + " " + str(fallbacks[stat]).ljust(10) + str(percent).ljust(4) + "\n")
