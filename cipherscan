@@ -1454,6 +1454,7 @@ test_kex_sigalgs() {
             [ "$OUTPUTFORMAT" == "terminal" ] && [ $DEBUG -lt 1 ] && echo -n '.'
         done
     fi
+    # TODO: test server vs client ordering
 }
 
 # UNKNOWNOPTIONS=""
