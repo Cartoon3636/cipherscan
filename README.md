@@ -16,14 +16,19 @@ Cipherscan should work fine on Linux, Mac OS X, Solaris, Illumos, SmartOS, OpenI
 Build OpenSSL with ChaCha20-Poly1305 support (Optional)
 -------------------------------------------------------
 
-The OpenSSL binary in this repository is built for 64bit Linux. If you wish to build a version with the same features for your own platform, [the snapshot from the OpenSSL gitweb view](http://git.openssl.org/gitweb/?p=openssl.git;a=tree;h=161b23361778c155f9c174694b1db2506a2e0b52;hb=9a8646510b) and build it like this:
+The OpenSSL binary in this repository is built for 64bit Linux. If you wish to
+build a version yourself for your own platform or want more features tested,
+[PeterMosmans/1.0.2-chacha branch has the needed code](https://github.com/PeterMosmans/openssl/tree/1.0.2-chacha)
+and can be build like this:
 
 ```
-./config no-shared
+./Configure zlib no-shared experimental-jpake enable-md2 enable-rc5 enable-rfc3779 enable-gost enable-static-engine linux-x86_64
+make depend
 make
+make report
 ```
 
-And get the binary from `app/openssl`. (`./config` will ask you to run `make depend` which will fail - for our purposes this step is not required)
+And get the binary from `app/openssl`.
 
 Options
 -------
