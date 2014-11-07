@@ -1360,6 +1360,10 @@ test_kex_sigalgs() {
             sslcommand+=" -CAfile $CACERTS"
         fi
         sslcommand+=" $SCLIENTARGS -connect $TARGET -cipher $supported_ecdsa_ciphers"
+        # since some ciphers supported by server may be SSLv2 only, we need to
+        # force use of TLSv1.2, otherwise openssl will send a SSLv2 compatible
+        # client hello
+        sslcommand+=" -tls1_2"
         local test_ecdsa_sigalgs=("${ecdsa_sigalgs[@]}")
         local test_rsa_sigalgs=("${rsa_sigalgs[@]}")
 
@@ -1369,7 +1373,7 @@ test_kex_sigalgs() {
             local test_sigalgs="$ret"
 
             ratelimit
-            verbose "Testing default ECDSA sig algs with $test_sigalgs"
+            verbose "Testing default ECDSA sig algs with $sslcommand -sigalgs $test_sigalgs"
             local tmp=$(echo Q | $sslcommand -sigalgs $test_sigalgs 2>/dev/null)
             parse_openssl_output <<<"$tmp"
             verbose "server selected $current_cipher, $current_protocol, $current_kex_sigalg"
@@ -1436,6 +1440,10 @@ test_kex_sigalgs() {
             sslcommand+=" -CAfile $CACERTS"
         fi
         sslcommand+=" $SCLIENTARGS -connect $TARGET -cipher $supported_rsa_ciphers"
+        # since some ciphers supported by server may be SSLv2 only, we need to
+        # force use of TLSv1.2, otherwise openssl will send a SSLv2 compatible
+        # client hello
+        sslcommand+=" -tls1_2"
         local test_ecdsa_sigalgs=("${ecdsa_sigalgs[@]}")
         local test_rsa_sigalgs=("${rsa_sigalgs[@]}")
 
@@ -1445,7 +1453,7 @@ test_kex_sigalgs() {
             local test_sigalgs="$ret"
 
             ratelimit
-            verbose "Testing default RSA sig algs with $test_sigalgs"
+            verbose "Testing default RSA sig algs with $sslcommand -sigalgs $test_sigalgs"
             local tmp=$(echo Q | $sslcommand -sigalgs $test_sigalgs 2>/dev/null)
             parse_openssl_output <<<"$tmp"
             verbose "server selected $current_cipher, $current_protocol, $current_kex_sigalg"
