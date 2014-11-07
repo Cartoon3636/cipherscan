@@ -1363,7 +1363,7 @@ test_kex_sigalgs() {
         # since some ciphers supported by server may be SSLv2 only, we need to
         # force use of TLSv1.2, otherwise openssl will send a SSLv2 compatible
         # client hello
-        sslcommand+=" -tls1_2"
+        sslcommand+=" -no_ssl2 -no_ssl3"
         local test_ecdsa_sigalgs=("${ecdsa_sigalgs[@]}")
         local test_rsa_sigalgs=("${rsa_sigalgs[@]}")
 
@@ -1443,7 +1443,7 @@ test_kex_sigalgs() {
         # since some ciphers supported by server may be SSLv2 only, we need to
         # force use of TLSv1.2, otherwise openssl will send a SSLv2 compatible
         # client hello
-        sslcommand+=" -tls1_2"
+        sslcommand+=" -no_ssl2 -no_ssl3"
         local test_ecdsa_sigalgs=("${ecdsa_sigalgs[@]}")
         local test_rsa_sigalgs=("${rsa_sigalgs[@]}")
 
