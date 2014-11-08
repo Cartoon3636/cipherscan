@@ -184,8 +184,6 @@ for r,d,flist in os.walk(path):
             if 'sigalgs' in results:
                 if results['sigalgs']['ordering']:
                     temppfssigalgordering[results['sigalgs']['ordering']] = 1
-                else:
-                    temppfssigalgordering["Fail"] = 1
                 if results['sigalgs']['ECDSA-fallback']:
                     temppfssigalgfallback['ECDSA ' + results['sigalgs']['ECDSA-fallback']] = 1
                 if results['sigalgs']['RSA-fallback']:
