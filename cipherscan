@@ -127,24 +127,27 @@ usage() {
 [-v|--verbose] [-o|--openssl file] [openssl s_client args] <target:port>
     usage: $0 -h|--help
 
-$0 attempts to connect to a target site using all the ciphersuites it knows.
-Julien Vehent [:ulfr] - https://github.com/jvehent/cipherscan
+$0 attempts to connect to a target site using all the ciphersuites known
+to OpenSSL it is using.
+
+Julien Vehent [:ulfr] and others (see README.md)
+https://github.com/jvehent/cipherscan
 
 Port defaults to 443
 
-example: $ $0 www.google.com:443
+example: $ $0 www.google.com
 
 Use one of the options below:
 
 -a | --allciphers   Test all known ciphers individually at the end.
 -b | --benchmark    Activate benchmark mode.
 --capath            use CAs from directory (must be in OpenSSL CAdir format)
---saveca            save intermediate certificates in CA directory
 -d | --delay        Pause for n seconds between connections
 -D | --debug        Output ALL the information.
 -h | --help         Shows this help text.
 -j | --json         Output results in JSON format.
 -o | --openssl      path/to/your/openssl binary you want to use.
+--saveca            save intermediate certificates in CA directory
 --savecrt           path where to save untrusted and leaf certificates
 --[no-]curves       test ECC curves supported by server (req. OpenSSL 1.0.2)
 --sigalg            test signature algorithms used in TLSv1.2 ephemeral ciphers
@@ -152,9 +155,20 @@ Use one of the options below:
 -v | --verbose      Increase verbosity.
 
 The rest of the arguments will be interpreted as openssl s_client argument.
-This enables checking smtp/imap/pop3/ftp/xmpp via -starttls
 
-EXAMPLES: $0 -starttls xmpp jabber.ccc.de:5222
+Useful OpenSSL options:
+-starttls [smtp|imap|pop3|ftp|xmpp] Enable support and testing of the protocols
+                    that require turning TLS after initial protocol specific
+                    hello
+-servername name    Request SNI support for connections
+-checkhost name     Request host name verification in connection
+                    (req. OpenSSL 1.0.2)
+-checkip ip         Request host name verification for an IP address, usually
+                    not specified in certificates (req. OpenSSL 1.0.2)
+
+EXAMPLES:
+$0 -starttls xmpp jabber.ccc.de:5222
+$0 -servername youtube.com youtube.com:443
 "
 }
 
