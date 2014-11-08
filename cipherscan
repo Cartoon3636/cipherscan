@@ -733,6 +733,9 @@ display_results_in_terminal() {
             echo "Server side sigalg ordering"
         elif [[ ${sigalgs_ordering} == "client" ]]; then
             echo "Client side sigalg ordering"
+        elif [[ ${sigalgs_ordering} == "unsupported" ]]; then
+            # do nothing - messages above will report that it's unsupported
+            echo -n
         else
             echo "Ordering test failure: ${sigalgs_ordering}"
         fi
@@ -1520,7 +1523,10 @@ test_kex_sigalgs() {
     #
     # test which ordering is preferred, server or client
     #
-    if [[ ${#sigalgs_preferred_rsa[@]} -le 1 \
+    if [[ ${#sigalgs_preferred_rsa[@]} -eq 0 \
+        && ${#sigalgs_preferred_ecdsa[@]} -eq 0 ]]; then
+        sigalgs_ordering="unsupported"
+    elif [[ ${#sigalgs_preferred_rsa[@]} -le 1 \
         && ${#sigalgs_preferred_ecdsa[@]} -le 1 ]]; then
         # if there is just one hash for each signature algorithm, that means
         # the server essentially forces the signature algorithm on client
