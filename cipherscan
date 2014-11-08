@@ -817,15 +817,15 @@ display_results_in_json() {
     fi
 
     if [[ $renegotiation ]]; then
-        echo ",\"renegotiation\":\"$renegotiation\""
+        echo -n ",\"renegotiation\":\"$renegotiation\""
     else
-        echo ",\"renegotiation\":\"False\""
+        echo -n ",\"renegotiation\":\"False\""
     fi
 
     if [[ $compression ]]; then
-        echo ",\"compression\":\"$compression\""
+        echo -n ",\"compression\":\"$compression\""
     else
-        echo ",\"compression\":\"False\""
+        echo -n ",\"compression\":\"False\""
     fi
 
     if [[ $TEST_KEX_SIGALG == "True" ]]; then
