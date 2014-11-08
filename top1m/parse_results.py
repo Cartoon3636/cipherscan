@@ -79,6 +79,7 @@ ocspstaple = defaultdict(int)
 fallbacks = defaultdict(int)
 pfssigalgfallback = defaultdict(int)
 pfssigalgs = defaultdict(int)
+pfssigalgsordering = defaultdict(int)
 compression = defaultdict(int)
 renegotiation = defaultdict(int)
 dsarsastack = 0
@@ -100,6 +101,7 @@ for r,d,flist in os.walk(path):
         tempfallbacks = {}
         """ supported ciphers by the server under scan """
         tempcipherstats = {}
+        temppfssigalgordering = {}
         temppfssigalgfallback = {}
         temppfssigalgs = {}
         tempcompression = {}
@@ -184,6 +186,10 @@ for r,d,flist in os.walk(path):
 
             """ collect TLSv1.2 PFS ciphersuite sigalgs """
             if 'sigalgs' in results:
+                if results['sigalgs']['ordering']:
+                    temppfssigalgordering[results['sigalgs']['ordering']] = 1
+                else:
+                    temppfssigalgordering["Fail"] = 1
                 if results['sigalgs']['ECDSA-fallback']:
                     temppfssigalgfallback['ECDSA ' + results['sigalgs']['ECDSA-fallback']] = 1
                 if results['sigalgs']['RSA-fallback']:
@@ -446,6 +452,8 @@ for r,d,flist in os.walk(path):
             pfssigalgfallback[s] += 1
         for s in temppfssigalgs:
             pfssigalgs[s] += 1
+        for s in temppfssigalgordering:
+            pfssigalgsordering[s] += 1
 
         """ store cipher stats """
         if AESGCM:
@@ -652,6 +660,12 @@ print("------------------------------+---------+--------")
 for stat in sorted(pfssigalgs):
     percent = round(pfssigalgs[stat] / total * 100, 4)
     sys.stdout.write(stat.ljust(30) + " " + str(pfssigalgs[stat]).ljust(10) + str(percent).ljust(9) + "\n")
+
+print("\nTLSv1.2 PFS ordering           Count     Percent ")
+print("------------------------------+---------+--------")
+for stat in sorted(pfssigalgsordering):
+    percent = round(pfssigalgsordering[stat] / total * 100, 4)
+    sys.stdout.write(stat.ljust(30) + " " + str(pfssigalgsordering[stat]).ljust(10) + str(percent).ljust(9) + "\n")
 
 print("\nTLSv1.2 PFS sigalg fallback    Count     Percent ")
 print("------------------------------+---------+--------")
