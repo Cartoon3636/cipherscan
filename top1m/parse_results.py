@@ -188,12 +188,12 @@ for r,d,flist in os.walk(path):
                     temppfssigalgfallback['ECDSA ' + results['sigalgs']['ECDSA-fallback']] = 1
                 if results['sigalgs']['RSA-fallback']:
                     temppfssigalgfallback['RSA ' + results['sigalgs']['RSA-fallback']] = 1
-                if 'RSA' in results['sigalgs']:
+                if 'RSA' in results['sigalgs'] and results['sigalgs']['RSA'][0] != 'Fail':
                     for pfssigalg in results['sigalgs']['RSA']:
                         temppfssigalgs['RSA-' + pfssigalg]=1
                     if len(results['sigalgs']['RSA']) == 1:
                         temppfssigalgs['RSA-' + results['sigalgs']['RSA'][0] + ' Only'] = 1
-                if 'ECDSA' in results['sigalgs']:
+                if 'ECDSA' in results['sigalgs'] and results['sigalgs']['ECDSA'][0] != 'Fail':
                     for pfssigalg in results['sigalgs']['ECDSA']:
                         temppfssigalgs['ECDSA-' + pfssigalg]=1
                     if len(results['sigalgs']['ECDSA']) == 1:
