@@ -138,9 +138,9 @@ Useful OpenSSL options:
                     that require turning TLS after initial protocol specific
                     hello
 -servername name    Request SNI support for connections
--checkhost name     Request host name verification in connection
+-verify_hostname name Request host name verification in connection
                     (req. OpenSSL 1.0.2)
--checkip ip         Request host name verification for an IP address, usually
+-verify_ip ip       Request host name verification for an IP address, usually
                     not specified in certificates (req. OpenSSL 1.0.2)
 
 EXAMPLES:
