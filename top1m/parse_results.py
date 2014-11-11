@@ -13,6 +13,7 @@ path = "./results/"
 import json
 import sys
 from collections import defaultdict
+import operator
 import os
 import re
 
@@ -77,6 +78,20 @@ eccordering = defaultdict(int)
 ecccurve = defaultdict(int)
 ocspstaple = defaultdict(int)
 fallbacks = defaultdict(int)
+# array with indexes of fallback names for the matrix report
+fallback_ids = defaultdict(int)
+fallback_ids['big-SSLv3'] = 0
+fallback_ids['big-TLSv1.0'] = 1
+fallback_ids['big-TLSv1.1'] = 2
+fallback_ids['big-TLSv1.2'] = 3
+# padding space
+fallback_ids[' '] = 4
+fallback_ids['small-TLSv1.0'] = 5
+fallback_ids['small-TLSv1.2'] = 6
+fallback_ids['  '] = 7
+fallback_ids['v2-small-TLSv1.0'] = 8
+fallback_ids['v2-small-TLSv1.2'] = 9
+fallback_ids['v2-big-TLSv1.2'] = 10
 pfssigalgfallback = defaultdict(int)
 pfssigalgs = defaultdict(int)
 pfssigalgsordering = defaultdict(int)
@@ -162,11 +177,20 @@ for r,d,flist in os.walk(path):
                 # from fallback attempts that means that the scan of a host
                 # is inconclusive
                 if 'configs' in results:
+                    tolerance = [' '] * len(fallback_ids)
                     for entry in results['configs']:
                         config = results['configs'][entry]
                         if config['tolerant'] == "True" and \
                                 config['trusted'] == "True":
-                            fallbacks['inconclusive ' + entry] += 1
+
+                            # save which protocols passed
+                            if entry in fallback_ids:
+                                tolerance[fallback_ids[entry]] = 'v'
+                            else:
+                                fallback_ids[entry] = len(fallback_ids)
+                                tolerance.insert(fallback_ids[entry], 'v')
+
+                    fallbacks["".join(tolerance).rstrip()]
                 continue
 
             """ save ECC curve stats """
@@ -200,21 +224,19 @@ for r,d,flist in os.walk(path):
                         temppfssigalgs['ECDSA-' + results['sigalgs']['ECDSA'][0] + ' Only'] = 1
 
             if 'configs' in results:
+                tolerance = [' '] * len(fallback_ids)
                 for entry in results['configs']:
                     config = results['configs'][entry]
+
+                    if not entry in fallback_ids:
+                        fallback_ids[entry] = len(fallback_ids)
+                        tolerance.insert(fallback_ids[entry], ' ')
+
                     if config['tolerant'] == "True":
-                        tempfallbacks[entry + " tolerant"] = 1
+                        tolerance[fallback_ids[entry]] = 'v'
                     else:
-                        tempfallbacks[entry + " intolerant"] = 1
-                if results['configs']['big-SSLv3']['tolerant'] == "True" and \
-                    results['configs']['big-TLSv1.0']['tolerant'] == "False" and \
-                    results['configs']['big-TLSv1.1']['tolerant'] == "False" and \
-                    results['configs']['big-TLSv1.2']['tolerant'] == "False":
-                        tempfallbacks['big-SSLv3 Only tolerant'] = 1
-                if results['configs']['big-TLSv1.0']['tolerant'] == "True" and \
-                    results['configs']['big-TLSv1.1']['tolerant'] == "False" and \
-                    results['configs']['big-TLSv1.2']['tolerant'] == "False":
-                        tempfallbacks['big-TLSv1.0 or big-SSLv3 Only tolerant'] = 1
+                        tolerance[fallback_ids[entry]] = 'X'
+                tempfallbacks["".join(tolerance).rstrip()] = 1
 
             """ get some extra data about server """
             if 'renegotiation' in results:
@@ -706,6 +728,14 @@ for stat in sorted(protocolstats):
 
 print("\nRequired fallbacks                       Count     Percent")
 print("----------------------------------------+---------+-------")
+print("big  sm v2  ")
+print("----+--+---+----------------------------+---------+-------")
 for stat in sorted(fallbacks):
     percent = round(fallbacks[stat] / total * 100, 4)
     sys.stdout.write(stat.ljust(40) + " " + str(fallbacks[stat]).ljust(10) + str(percent).ljust(4) + "\n")
+
+print("\nFallback column names")
+print("------------------------")
+fallback_ids_sorted=sorted(fallback_ids.items(), key=operator.itemgetter(1))
+for touple in fallback_ids_sorted:
+    print(str(touple[1]+1).rjust(3) + "  " + str(touple[0]))
