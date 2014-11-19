@@ -190,7 +190,11 @@ for r,d,flist in os.walk(path):
                                 fallback_ids[entry] = len(fallback_ids)
                                 tolerance.insert(fallback_ids[entry], 'v')
 
-                    fallbacks["".join(tolerance).rstrip()]
+                    # analysis of host won't be continued, so we have to add
+                    # results to the permanent, not temporary table, but
+                    # do that only when there actually were detected values
+                    if "".join(tolerance).strip():
+                        fallbacks["".join(tolerance).rstrip()] += 1
                 continue
 
             """ save ECC fallback (new format) """
