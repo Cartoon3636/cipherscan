@@ -80,18 +80,43 @@ ocspstaple = defaultdict(int)
 fallbacks = defaultdict(int)
 # array with indexes of fallback names for the matrix report
 fallback_ids = defaultdict(int)
-fallback_ids['big-SSLv3'] = 0
-fallback_ids['big-TLSv1.0'] = 1
-fallback_ids['big-TLSv1.1'] = 2
-fallback_ids['big-TLSv1.2'] = 3
+i=0
+fallback_ids['big-SSLv3'] = i
+i+=1
+fallback_ids['big-TLSv1.0'] = i
+i+=1
+fallback_ids['big-TLSv1.1'] = i
+i+=1
+fallback_ids['big-TLSv1.2'] = i
+i+=1
 # padding space
-fallback_ids[' '] = 4
-fallback_ids['small-TLSv1.0'] = 5
-fallback_ids['small-TLSv1.2'] = 6
-fallback_ids['  '] = 7
-fallback_ids['v2-small-TLSv1.0'] = 8
-fallback_ids['v2-small-TLSv1.2'] = 9
-fallback_ids['v2-big-TLSv1.2'] = 10
+fallback_ids[' '] = i
+i+=1
+fallback_ids['small-SSLv3'] = i
+i+=1
+fallback_ids['small-TLSv1.0-notlsext'] = i
+i+=1
+fallback_ids['small-TLSv1.0'] = i
+i+=1
+fallback_ids['small-TLSv1.1'] = i
+i+=1
+fallback_ids['small-TLSv1.2'] = i
+i+=1
+# 2nd padding space
+fallback_ids['  '] = i
+i+=1
+fallback_ids['v2-small-SSLv3'] = i
+i+=1
+fallback_ids['v2-small-TLSv1.0'] = i
+i+=1
+fallback_ids['v2-small-TLSv1.1'] = i
+i+=1
+fallback_ids['v2-small-TLSv1.2'] = i
+i+=1
+fallback_ids['v2-big-TLSv1.2'] = i
+i+=1
+# 3rd padding space
+fallback_ids['   '] = i
 pfssigalgfallback = defaultdict(int)
 pfssigalgs = defaultdict(int)
 pfssigalgsordering = defaultdict(int)
@@ -750,8 +775,8 @@ for stat in sorted(protocolstats):
 
 print("\nRequired fallbacks                       Count     Percent")
 print("----------------------------------------+---------+-------")
-print("big  sm v2  ")
-print("----+--+---+----------------------------+---------+-------")
+print("big  small v2   ")
+print("----+-----+-----+-----------------------+---------+-------")
 for stat in sorted(fallbacks):
     percent = round(fallbacks[stat] / total * 100, 4)
     sys.stdout.write(stat.ljust(40) + " " + str(fallbacks[stat]).ljust(10) + str(percent).ljust(4) + "\n")
