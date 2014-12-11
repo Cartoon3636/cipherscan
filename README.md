@@ -22,7 +22,8 @@ build a version yourself for your own platform or want more features tested,
 and can be build like this:
 
 ```
-./Configure zlib no-shared experimental-jpake enable-md2 enable-rc5 enable-rfc3779 enable-gost enable-static-engine linux-x86_64
+./Configure zlib no-shared experimental-jpake enable-md2 enable-rc5 \
+enable-rfc3779 enable-gost enable-static-engine linux-x86_64
 make depend
 make
 make report
