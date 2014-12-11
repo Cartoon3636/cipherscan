@@ -1333,6 +1333,21 @@ test_tls_tolerance() {
         fi
 
         #
+        # v3 format TLSv1.0 hello, small cipher list, no extensions
+        #
+        ratelimit
+        verbose "Testing fallback with $sslcommand -no_tls1_2 -no_tls1_1 -no_tlsext"
+        local tmp=$(echo Q | $sslcommand -no_tls1_2 -no_tls1_1 -no_tlsext 2>/dev/null)
+        parse_openssl_output <<<"$tmp"
+        verbose "Negotiated proto: $current_protocol, cipher: $current_cipher"
+        if [[ -z $current_protocol || $current_cipher == "(NONE)" \
+            || $current_cipher == '0000' ]]; then
+                tls_tolerance['small-TLSv1.0-notlsext']="False"
+        else
+            tls_tolerance['small-TLSv1.0-notlsext']="True $current_protocol $current_cipher $current_trusted"
+        fi
+
+        #
         # v3 format SSLv3 hello, small cipher list
         #
         ratelimit
