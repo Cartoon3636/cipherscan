@@ -337,7 +337,7 @@ for r,d,flist in os.walk(path):
                         AESGCM = True
                         ciphertypes += 1
                 elif 'AES' in entry['cipher']:
-                    if not AES:
+                    if not AESCBC:
                         AES = True
                         AESCBC = True
                         ciphertypes += 1
