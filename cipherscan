@@ -516,7 +516,8 @@ test_cipher_on_target() {
             # signed ones)
             local saved="False"
             if ${OPENSSLBIN} verify "${trust_source[@]}" \
-                -untrusted <(printf "%s" "${current_raw_certificates[@]}") <(echo "$cert") 2>/dev/null | \
+                -untrusted <(printf "%s" "${current_raw_certificates[@]}") \
+                <(echo "$cert") 2>/dev/null | \
                 grep ': OK$' >/dev/null; then
 
                 # if the certificate is an intermediate CA it may be useful
@@ -613,7 +614,8 @@ test_cipher_on_target() {
 # Calculate the average handshake time for a specific ciphersuite
 bench_cipher() {
     local ciphersuite="$1"
-    local sslcommand="$TIMEOUTBIN $TIMEOUT $OPENSSLBIN s_client $SCLIENTARGS -connect $TARGET -cipher $ciphersuite"
+    local sslcommand="$TIMEOUTBIN $TIMEOUT $OPENSSLBIN s_client $SCLIENTARGS"
+    sslcommand+=" -connect $TARGET -cipher $ciphersuite"
     local t="$(date +%s%N)"
     verbose "Benchmarking handshake on '$TARGET' with ciphersuite '$ciphersuite'"
     for i in $(seq 1 $BENCHMARKITER); do
@@ -642,7 +644,8 @@ get_cipher_pref() {
     elif [ -e $CACERTS ]; then
         sslcommand+=" -CAfile $CACERTS"
     fi
-    sslcommand+=" -status $SCLIENTARGS -connect $TARGET -cipher $ciphersuite"
+    sslcommand+=" -trusted_first -status $SCLIENTARGS -connect $TARGET"
+    sslcommand+=" -cipher $ciphersuite"
 
     verbose "Connecting to '$TARGET' with ciphersuite '$ciphersuite'"
     test_cipher_on_target "$sslcommand"
@@ -987,7 +990,8 @@ test_serverside_ordering() {
     elif [ -e "$CACERTS" ]; then
         sslcommand+=" -CAfile $CACERTS"
     fi
-    sslcommand+=" -status $SCLIENTARGS -connect $TARGET -cipher $ciphersuite"
+    sslcommand+=" -trusted_first -status $SCLIENTARGS -connect $TARGET"
+    sslcommand+=" -cipher $ciphersuite"
 
     test_cipher_on_target "$sslcommand"
     if [ $? -ne 0 ]; then
@@ -1028,6 +1032,7 @@ test_curves() {
         sslcommand+=" -CAfile $CACERTS"
     fi
     sslcommand+=" -status $SCLIENTARGS -connect $TARGET -cipher $current_cipher"
+    sslcommand+=" -trusted_first"
     # force the TLS to send a TLS1.0 client hello at least, as with SSLv2
     # ciphers present it will try to send a SSLv2 compatible client hello
     sslcommand+=" -no_ssl2 -no_ssl3"
@@ -1150,6 +1155,7 @@ test_curves_fallback() {
     elif [ -e "$CACERTS" ]; then
         sslcommand+=" -CAfile $CACERTS"
     fi
+    sslcommand+=" -trusted_first"
     sslcommand+=" -status $SCLIENTARGS -connect $TARGET -cipher $ecc_ciphers"
     # force the TLS to send a TLS1.0 client hello at least, as with SSLv2
     # ciphers present it will try to send a SSLv2 compatible client hello
@@ -1214,7 +1220,12 @@ test_tls_tolerance() {
     tls_vers_tests['big-SSLv3']="-no_tls1_2 -no_tls1_1 -no_tls1"
 
     local sslcommand="$TIMEOUTBIN $TIMEOUT $OPENSSLBIN s_client"
-    sslcommand+=" -status -nextprotoneg 'http/1.1'"
+    if [ -n "$CAPATH" ]; then
+        sslcommand+=" -CApath $CAPATH -showcerts"
+    elif [ -e "$CACERTS" ]; then
+        sslcommand+=" -CAfile $CACERTS"
+    fi
+    sslcommand+=" -trusted_first -status -nextprotoneg 'http/1.1'"
     sslcommand+=" $SCLIENTARGS -connect $TARGET -cipher $CIPHERSUITE"
 
     for version in "${!tls_vers_tests[@]}"; do
@@ -1254,7 +1265,7 @@ test_tls_tolerance() {
         elif [ -e "$CACERTS" ]; then
             sslcommand+=" -CAfile $CACERTS"
         fi
-        sslcommand+=" -connect $TARGET -cipher $CIPHERSUITE"
+        sslcommand+=" -trusted_first -connect $TARGET -cipher $CIPHERSUITE"
 
         ratelimit
         verbose "Testing fallback with $sslcommand"
@@ -1282,7 +1293,7 @@ test_tls_tolerance() {
         elif [ -e "$CACERTS" ]; then
             sslcommand+=" -CAfile $CACERTS"
         fi
-        sslcommand+=" -connect $TARGET -cipher $ciphers"
+        sslcommand+=" -trusted_first -connect $TARGET -cipher $ciphers"
 
         ratelimit
         verbose "Testing fallback with $sslcommand"
@@ -1356,6 +1367,7 @@ test_tls_tolerance() {
         elif [ -e "$CACERTS" ]; then
             sslcommand+=" -CAfile $CACERTS"
         fi
+        sslcommand+=" -trusted_first"
         sslcommand+=" $SCLIENTARGS -connect $TARGET -cipher $ciphers:!SSLv2"
 
         ratelimit
@@ -1514,7 +1526,8 @@ test_kex_sigalgs() {
         elif [ -e "$CACERTS" ]; then
             sslcommand+=" -CAfile $CACERTS"
         fi
-        sslcommand+=" $SCLIENTARGS -connect $TARGET -cipher $supported_ecdsa_ciphers"
+        sslcommand+=" -trusted_first $SCLIENTARGS -connect $TARGET"
+        sslcommand+=" -cipher $supported_ecdsa_ciphers"
         # since some ciphers supported by server may be SSLv2 only, we need to
         # force use of TLSv1.2, otherwise openssl will send a SSLv2 compatible
         # client hello
@@ -1594,7 +1607,8 @@ test_kex_sigalgs() {
         elif [ -e "$CACERTS" ]; then
             sslcommand+=" -CAfile $CACERTS"
         fi
-        sslcommand+=" $SCLIENTARGS -connect $TARGET -cipher $supported_rsa_ciphers"
+        sslcommand+=" -trusted_first $SCLIENTARGS -connect $TARGET"
+        sslcommand+=" -cipher $supported_rsa_ciphers"
         # since some ciphers supported by server may be SSLv2 only, we need to
         # force use of TLSv1.2, otherwise openssl will send a SSLv2 compatible
         # client hello
@@ -1694,7 +1708,8 @@ test_kex_sigalgs() {
         elif [ -e "$CACERTS" ]; then
             sslcommand+=" -CAfile $CACERTS"
         fi
-        sslcommand+=" $SCLIENTARGS -connect $TARGET -cipher $supported_ecdsa_ciphers"
+        sslcommand+=" -trusted_first $SCLIENTARGS -connect $TARGET"
+        sslcommand+=" -cipher $supported_ecdsa_ciphers"
         # since some ciphers supported by server may be SSLv2 only, we need to
         # force use of TLSv1.2, otherwise openssl will send a SSLv2 compatible
         # client hello
@@ -1738,7 +1753,8 @@ test_kex_sigalgs() {
         elif [ -e "$CACERTS" ]; then
             sslcommand+=" -CAfile $CACERTS"
         fi
-        sslcommand+=" $SCLIENTARGS -connect $TARGET -cipher $supported_rsa_ciphers"
+        sslcommand+=" -trusted_first $SCLIENTARGS -connect $TARGET"
+        sslcommand+=" -cipher $supported_rsa_ciphers"
         # since some ciphers supported by server may be SSLv2 only, we need to
         # force use of TLSv1.2, otherwise openssl will send a SSLv2 compatible
         # client hello
