@@ -37,11 +37,17 @@ Options
 ```
 -a | --allciphers   Test all known ciphers individually at the end.
 -b | --benchmark    Activate benchmark mode.
+--capath            use CAs from directory (must be in OpenSSL CAdir format)
+--curves            test ECC curves supported by server (req. OpenSSL 1.0.2)
 -d | --delay        Pause for n seconds between connections
 -D | --debug        Output ALL the information.
 -h | --help         Shows this help text.
 -j | --json         Output results in JSON format.
 -o | --openssl      path/to/your/openssl binary you want to use.
+--saveca            save intermediate certificates in CA directory
+--savecrt           path where to save untrusted and leaf certificates
+--sigalg            test signature algorithms used in TLSv1.2 ephemeral ciphers
+                    (req. OpenSSL 1.0.2)
 -v | --verbose      Increase verbosity.
 ```
 
@@ -50,29 +56,52 @@ Example
 
 Testing plain SSL/TLS:
 ```
-linux $ ./cipherscan www.google.com:443
-...................
-prio  ciphersuite                  protocols                    pfs_keysize
-1     ECDHE-RSA-CHACHA20-POLY1305  TLSv1.2                      ECDH,P-256,256bits
-2     ECDHE-RSA-AES128-GCM-SHA256  TLSv1.2                      ECDH,P-256,256bits
-3     ECDHE-RSA-AES128-SHA         TLSv1.1,TLSv1.2              ECDH,P-256,256bits
-4     ECDHE-RSA-RC4-SHA            SSLv3,TLSv1,TLSv1.1,TLSv1.2  ECDH,P-256,256bits
-5     AES128-GCM-SHA256            TLSv1.2
-6     AES128-SHA256                TLSv1.2
-7     AES128-SHA                   TLSv1.1,TLSv1.2
-8     RC4-SHA                      SSLv3,TLSv1,TLSv1.1,TLSv1.2
-9     RC4-MD5                      SSLv3,TLSv1,TLSv1.1,TLSv1.2
-10    ECDHE-RSA-AES256-GCM-SHA384  TLSv1.2                      ECDH,P-256,256bits
-11    ECDHE-RSA-AES256-SHA384      TLSv1.2                      ECDH,P-256,256bits
-12    ECDHE-RSA-AES256-SHA         SSLv3,TLSv1,TLSv1.1,TLSv1.2  ECDH,P-256,256bits
-13    AES256-GCM-SHA384            TLSv1.2
-14    AES256-SHA256                TLSv1.2
-15    AES256-SHA                   SSLv3,TLSv1,TLSv1.1,TLSv1.2
-16    ECDHE-RSA-DES-CBC3-SHA       SSLv3,TLSv1,TLSv1.1,TLSv1.2  ECDH,P-256,256bits
-17    DES-CBC3-SHA                 SSLv3,TLSv1,TLSv1.1,TLSv1.2
-18    ECDHE-RSA-AES128-SHA256      TLSv1.2                      ECDH,P-256,256bits
+linux$ ./cipherscan --curves --sigalg -servername login.live.com login.live.com:443
+................
+Target: login.live.com:443
+
+prio  ciphersuite              protocols              pfs_keysize
+1     ECDHE-RSA-AES256-SHA384  TLSv1.2                ECDH,P-521,521bits
+2     ECDHE-RSA-AES256-SHA     TLSv1,TLSv1.1,TLSv1.2  ECDH,P-521,521bits
+3     ECDHE-RSA-AES128-SHA256  TLSv1.2                ECDH,P-521,521bits
+4     ECDHE-RSA-AES128-SHA     TLSv1,TLSv1.1,TLSv1.2  ECDH,P-521,521bits
+5     AES256-GCM-SHA384        TLSv1.2
+6     AES128-GCM-SHA256        TLSv1.2
+7     AES256-SHA256            TLSv1.2
+8     AES256-SHA               TLSv1,TLSv1.1,TLSv1.2
+9     AES128-SHA256            TLSv1.2
+10    AES128-SHA               TLSv1,TLSv1.1,TLSv1.2
+11    DES-CBC3-SHA             TLSv1,TLSv1.1,TLSv1.2
 
 Certificate: trusted, 2048 bit, sha1WithRSAEncryption signature
+TLS ticket lifetime hint: None
+OCSP stapling: supported
+Server side cipher ordering
+Server supports secure renegotiation
+Server supported compression methods: NONE
+
+prio  curve
+1     secp521r1
+2     secp384r1
+3     prime256v1
+
+Server does fallback on unsupported curves
+server side curve ordering
+
+TLSv1.2 ephemeral sigalgs:
+no PFS ECDSA ciphers detected
+RSA test: intolerant of sigalg removal
+Server side sigalg ordering
+
+Supported PFS RSA signature algorithms
+prio  sigalg
+1     SHA1
+
+Fallbacks required:
+big-SSLv3 config not supported, connection failed
+big-TLSv1.0 no fallback req, connected: TLSv1 ECDHE-RSA-AES256-SHA
+big-TLSv1.1 no fallback req, connected: TLSv1.1 ECDHE-RSA-AES256-SHA
+big-TLSv1.2 no fallback req, connected: TLSv1.2 ECDHE-RSA-AES256-SHA384
 ```
 
 Testing STARTTLS:
