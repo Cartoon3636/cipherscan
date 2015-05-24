@@ -18,12 +18,23 @@ if [[ -e $DIR ]] && [[ ! -d $DIR ]]; then
     exit 1
 fi
 
+# prepare directory
+if [[ ! -e $DIR ]]; then
+    mkdir "$DIR"
+    if [ $? -ne 0 ]; then
+        echo "mkdir failed, check your privileges" >&2
+        return 1
+    fi
+fi
+
+pushd "$DIR" >/dev/null
+
 # search for trust anchors
 for f in "${CACERTS}" \
          /etc/pki/tls/certs/ca-bundle.crt \
          /etc/ssl/certs/ca-certificates.crt \
-         "$(dirname $0)/ca-bundle.crt" \
-         "$(dirname $0)/../ca-bundle.crt"; do
+         "$(dirname $0)/../ca-bundle.crt" \
+         "$(dirname $0)/../../ca-bundle.crt"; do
     if [ -e "$f" ]; then
         CACERTS="$f"
         break
@@ -35,8 +46,8 @@ if [ ! -e "$CACERTS" ]; then
 fi
 
 # search for openssl
-for f in "$(dirname $0)/openssl" \
-         "$(dirname $0)/../openssl" \
+for f in "$(dirname $0)/../openssl" \
+         "$(dirname $0)/../../openssl" \
          "$(which openssl 2>/dev/null)"; do
     if [ -x "$f" ]; then
         OPENSSL="$f"
@@ -47,17 +58,6 @@ if [ ! -x "$OPENSSL" ]; then
     echo "openssl not found!" >&2
     return 1
 fi
-
-# prepare directory
-if [[ ! -e $DIR ]]; then
-    mkdir "$DIR"
-    if [ $? -ne 0 ]; then
-        echo "mkdir failed, check your privilages" >&2
-        return 1
-    fi
-fi
-
-pushd "$DIR" >/dev/null
 
 # split the file with all CA certs into single certs
 awk '
