@@ -120,6 +120,7 @@ int process_chain(const char **cert_hashes)
     X509_STORE *store;
 
     X509_STORE_CTX *csc;
+    X509_VERIFY_PARAM *vp;
 
     STACK_OF(X509) *ustack;
     STACK_OF(X509) *vstack;
@@ -158,6 +159,15 @@ int process_chain(const char **cert_hashes)
         free(f_name);
     }
 
+    // prepare store parameters
+    vp = X509_VERIFY_PARAM_new();
+    if (vp == NULL) {
+        printf("out of memory\n");
+        return 1;
+    }
+    // "Dec 26 18:25 2015"
+    X509_VERIFY_PARAM_set_time(vp, (time_t)1451150700);
+
     // first try with just trusted certificates
 
     store = SSL_CTX_get_cert_store(trusted_only);
@@ -166,6 +176,7 @@ int process_chain(const char **cert_hashes)
         return 1;
     }
     X509_STORE_set_flags(store, X509_V_FLAG_TRUSTED_FIRST);
+    X509_STORE_set1_param(store, vp);
 
     csc = X509_STORE_CTX_new();
 
@@ -216,6 +227,7 @@ int process_chain(const char **cert_hashes)
         return 1;
     }
     X509_STORE_set_flags(store, X509_V_FLAG_TRUSTED_FIRST);
+    X509_STORE_set1_param(store, vp);
 
     csc = X509_STORE_CTX_new();
 
