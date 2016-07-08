@@ -79,12 +79,13 @@ def no_extensions(generator):
     return generator
 
 
-def scan_with_config(host, port, conf, __cache={}):
-    key = (host, port, conf)
+def scan_with_config(host, port, conf, hostname, *args, __cache={}):
+    assert not args
+    key = (host, port, conf, hostname)
     if key in __cache:
         return __cache[key]
 
-    scanner = Scanner(conf, host, port)
+    scanner = Scanner(conf, host, port, hostname)
     ret = scanner.scan()
     __cache[key] = ret
     return ret
@@ -152,7 +153,7 @@ def verbose_inspector(desc, result):
     return ret
 
 
-def scan_TLS_intolerancies(host, port):
+def scan_TLS_intolerancies(host, port, hostname):
     configs = {}
 
     gen = Xmas_tree()
@@ -226,7 +227,7 @@ def scan_TLS_intolerancies(host, port):
 
     results = {}
     for desc, conf in configs.items():
-        results[desc] = scan_with_config(host, port, conf)
+        results[desc] = scan_with_config(host, port, conf, hostname)
 
     host_up = any(simple_inspector(res) for res in results.values())
 
@@ -259,6 +260,9 @@ def scan_TLS_intolerancies(host, port):
     print(json.dumps(intolerancies))
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        raise TypeError("Provide hostname and port")
-    scan_TLS_intolerancies(sys.argv[1], sys.argv[2])
+    if len(sys.argv) not in (3, 4):
+        raise TypeError("Provide IP, port and hostname")
+    hostname = None
+    if len(sys.argv) == 4:
+        hostname = sys.argv[3]
+    scan_TLS_intolerancies(sys.argv[1], sys.argv[2], hostname)

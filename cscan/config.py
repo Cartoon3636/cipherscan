@@ -60,7 +60,8 @@ class Firefox_42(HelloConfig):
 
     def __call__(self, hostname):
         ext = []
-        ext.append(SNIExtension().create(hostname))
+        if hostname is not None:
+            ext.append(SNIExtension().create(hostname))
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
         ext.append(SupportedGroupsExtension().create([GroupName.secp256r1,
@@ -122,7 +123,8 @@ class Firefox_46(HelloConfig):
 
     def __call__(self, hostname):
         ext = []
-        ext.append(SNIExtension().create(hostname))
+        if hostname is not None:
+            ext.append(SNIExtension().create(hostname))
         ext.append(TLSExtension(extType=ExtensionType.extended_master_secret))
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
@@ -244,7 +246,8 @@ class Xmas_tree(HelloConfig):
 
     def __call__(self, hostname):
         ext = []
-        ext.append(SNIExtension().create(hostname))
+        if hostname is not None:
+            ext.append(SNIExtension().create(hostname))
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
         groups =[GroupName.secp256r1,
@@ -346,6 +349,7 @@ class IE_6(HelloConfig):
                              CipherSuite.TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA])
 
     def __call__(self, hostname):
+        del hostname
         rand = numberToByteArray(random.getrandbits(256), 32)
 
         return ClientHello(ssl2=True).create(self.version, rand, bytearray(0),
@@ -412,7 +416,8 @@ class IE_11_Win_7(HelloConfig):
 
     def __call__(self, hostname):
         ext = []
-        ext.append(SNIExtension().create(hostname))
+        if hostname is not None:
+            ext.append(SNIExtension().create(hostname))
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
         groups = [GroupName.secp256r1,
@@ -465,7 +470,8 @@ class IE_11_Win_8_1(HelloConfig):
 
     def __call__(self, hostname):
         ext = []
-        ext.append(SNIExtension().create(hostname))
+        if hostname is not None:
+            ext.append(SNIExtension().create(hostname))
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
         groups = [GroupName.secp256r1,

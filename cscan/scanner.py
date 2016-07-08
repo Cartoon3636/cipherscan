@@ -62,10 +62,11 @@ class HandshakeParser(object):
 class Scanner(object):
     """Helper class for scanning a host and returning serialised responses"""
 
-    def __init__(self, hello_gen, hostname, port=443):
-        self.hostname = hostname
+    def __init__(self, hello_gen, host, port=443, hostname=None):
+        self.host = host
         self.hello_gen = hello_gen
         self.port = port
+        self.hostname = hostname
 
     def scan(self):
         """Perform a scan on server"""
@@ -74,16 +75,18 @@ class Scanner(object):
         defragger.addStaticSize(ContentType.alert, 2)
         defragger.addDynamicSize(ContentType.handshake, 1, 3)
 
-        # XXX this will create a IPv6 or IPv4 connection, depending on what's
-        # available. We probably will want better control over that
         try:
-            raw_sock = socket.create_connection((self.hostname, self.port), 5)
+            raw_sock = socket.create_connection((self.host, self.port), 5)
         except socket.error as e:
             return [e]
 
         sock = MessageSocket(raw_sock, defragger)
 
-        client_hello = self.hello_gen(bytearray(self.hostname, 'utf-8'))
+        if self.hostname is not None:
+            client_hello = self.hello_gen(bytearray(self.hostname, 'utf-8'))
+        else:
+            client_hello = self.hello_gen(self.hostname)
+
 
         # record layer version - TLSv1.x
         if hasattr(client_hello, 'record_version'):
