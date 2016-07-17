@@ -260,9 +260,15 @@ def scan_TLS_intolerancies(host, port, hostname):
     print(json.dumps(intolerancies))
 
 if __name__ == "__main__":
-    if len(sys.argv) not in (3, 4):
-        raise TypeError("Provide IP, port and hostname")
+    if len(sys.argv) not in (2, 3):
+        raise TypeError("Provide IP[:port] and optionally a hostname")
     hostname = None
-    if len(sys.argv) == 4:
-        hostname = sys.argv[3]
-    scan_TLS_intolerancies(sys.argv[1], sys.argv[2], hostname)
+    if len(sys.argv) == 3:
+        hostname = sys.argv[2]
+    hostaddr = sys.argv[1].split(":")
+    if len(hostaddr) > 1:
+        host, port = hostaddr
+    else:
+        host = hostaddr[0]
+        port = 443
+    scan_TLS_intolerancies(host, port, hostname)
