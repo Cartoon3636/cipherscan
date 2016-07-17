@@ -1061,6 +1061,10 @@ display_results_in_json() {
         echo -n "}"
         ctr=$((ctr+1))
     done
+    if [[ -n $cscan_tests ]]; then
+        echo -n ',"intolerancies":'
+        echo -n "$cscan_tests"
+    fi
     echo '}}'
 }
 
@@ -1522,6 +1526,10 @@ test_tls_tolerance() {
             tls_tolerance['small-SSLv3']="True $current_protocol $current_cipher $current_trusted"
         fi
     fi
+
+    # finally run the Python based test to perform more precise scan
+    cscan_tests="$($DIRNAMEPATH/cscan.sh $TARGET $sni_target)"
+
 }
 
 test_kex_sigalgs() {

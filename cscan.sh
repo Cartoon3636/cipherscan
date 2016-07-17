@@ -1,4 +1,5 @@
 #!/bin/bash
+pushd "$(dirname ${BASH_SOURCE[0]})" > /dev/null
 if [ ! -d ./tlslite ]; then
     git clone --depth=1 https://github.com/tomato42/tlslite-ng.git .tlslite-ng
     ln -s .tlslite-ng/tlslite tlslite
@@ -20,4 +21,6 @@ if [[ $UPDATE ]]; then
 fi
 
 PYTHONPATH=. python cscan.py "$@"
-exit $?
+ret=$?
+popd > /dev/null
+exit $ret
