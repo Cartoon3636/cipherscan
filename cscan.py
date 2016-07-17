@@ -79,8 +79,8 @@ def no_extensions(generator):
     return generator
 
 
-def scan_with_config(host, port, conf, hostname, *args, __cache={}):
-    assert not args
+def scan_with_config(host, port, conf, hostname, __sentry=None, __cache={}):
+    assert __sentry is None
     key = (host, port, conf, hostname)
     if key in __cache:
         return __cache[key]
