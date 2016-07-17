@@ -765,6 +765,7 @@ display_results_in_terminal() {
         fi
         local cipher_data=($cipher)
         if [[ $ctr -eq 1 ]]; then
+            cipher="${cipher_data[1]}"
             pubkey="${cipher_data[2]}"
             sigalg="${cipher_data[3]}"
             trusted="${cipher_data[4]}"
@@ -829,7 +830,7 @@ display_results_in_terminal() {
     done|column -t
     echo
     
-    if [[ ($sigalg =~ RSA && $pubkey -ge 2047) || ($sigalg =~ ECDSA && $pubkey -gt 255) ]]; then
+    if [[ ($sigalg =~ RSA && $pubkey -ge 2047) || ($cipher =~ ECDSA && $pubkey -gt 255) ]]; then
         pubkey="${c_green}${pubkey}${c_reset}"
     else
         pubkey="${c_red}${pubkey}${c_reset}"
@@ -842,7 +843,7 @@ display_results_in_terminal() {
     if [[ $trusted == "True" ]]; then
         trusted="${c_green}trusted${c_reset}"
     else
-        trusted="${c_green}untrusted${c_reset}"
+        trusted="${c_red}untrusted${c_reset}"
     fi
     if [[ $different != "True" ]]; then
         echo -e "Certificate: $trusted, $pubkey bits, $sigalg signature"
@@ -1063,6 +1064,10 @@ display_results_in_json() {
         echo -n "}"
         ctr=$((ctr+1))
     done
+    if [[ -n $cscan_tests ]]; then
+        echo -n ',"intolerancies":'
+        echo -n "$cscan_tests"
+    fi
     echo '}}'
 }
 
@@ -1533,6 +1538,10 @@ test_tls_tolerance() {
             tls_tolerance['small-SSLv3']="True $current_protocol $current_cipher $current_trusted"
         fi
     fi
+
+    # finally run the Python based test to perform more precise scan
+    cscan_tests="$($DIRNAMEPATH/cscan.sh $TARGET $sni_target)"
+
 }
 
 test_kex_sigalgs() {
@@ -1970,17 +1979,22 @@ if [[ -z $OPENSSLBIN ]]; then
         exit 1
     fi
     OPENSSLBIN="${REALPATH}/${opensslbin_name}"
+    if ! [[ -x "${OPENSSLBIN}" ]]; then
+        OPENSSLBIN="$(which openssl)"  # fallback to generic openssl
+    fi
 fi
 # use custom config file to enable GOST ciphers
 if [[ -e $DIRNAMEPATH/openssl.cnf ]]; then
     export OPENSSL_CONF="$DIRNAMEPATH/openssl.cnf"
 fi
+
 OPENSSLBINHELP="$($OPENSSLBIN s_client -help 2>&1)"
 if [[ $OPENSSLBINHELP =~ :error: ]]; then
     verbose "$OPENSSLBIN can't handle GOST config, disabling"
     unset OPENSSL_CONF
     OPENSSLBINHELP="$($OPENSSLBIN s_client -help 2>&1)"
 fi
+
 if ! [[ $OPENSSLBINHELP =~ -connect ]]; then
     echo "$OPENSSLBIN s_client doesn't accept the -connect parameter, which is extremely strange; refusing to proceed." 1>&2
     exit 1
@@ -2004,8 +2018,9 @@ if (( $# < 1 )); then
 fi
 
 PARAMS=("$@")
-TARGET=${PARAMS[-1]}
-unset PARAMS[-1]
+last_element="$(( $# - 1 ))"
+TARGET=${PARAMS[$last_element]}
+unset PARAMS[$last_element]
 
 # Refuse to proceed if the hostname starts with a hyphen, since hostnames can't
 # begin with a hyphen and this likely means we accidentally parsed an option as
