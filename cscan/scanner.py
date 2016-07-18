@@ -132,7 +132,7 @@ class Scanner(object):
                     raise TypeError("Unknown content type: {0}"
                                     .format(header.type))
         except (TLSAbruptCloseError, TLSIllegalParameterException,
-                socket.error) as e:
+                ValueError, TypeError, socket.error) as e:
             messages += [e]
             return messages
         finally:
