@@ -13,7 +13,7 @@ from tlslite.messages import \
         CertificateRequest, NextProtocol, ServerHelloDone, Alert
 from tlslite.defragmenter import Defragmenter
 from tlslite.messagesocket import MessageSocket
-from tlslite.errors import TLSAbruptCloseError
+from tlslite.errors import TLSAbruptCloseError, TLSIllegalParameterException
 
 class HandshakeParser(object):
     """Inteligent parser for handshake messages"""
@@ -131,9 +131,8 @@ class Scanner(object):
                 else:
                     raise TypeError("Unknown content type: {0}"
                                     .format(header.type))
-        #except OSError:
-        #    return messages
-        except (TLSAbruptCloseError, socket.error) as e:
+        except (TLSAbruptCloseError, TLSIllegalParameterException,
+                socket.error) as e:
             messages += [e]
             return messages
         finally:
