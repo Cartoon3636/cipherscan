@@ -1061,11 +1061,12 @@ display_results_in_json() {
         echo -n "}"
         ctr=$((ctr+1))
     done
+    echo -n '}'
     if [[ -n $cscan_tests ]]; then
         echo -n ',"intolerancies":'
         echo -n "$cscan_tests"
     fi
-    echo '}}'
+    echo '}'
 }
 
 test_serverside_ordering() {
