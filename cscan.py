@@ -180,6 +180,12 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = Firefox_42()
     configs[gen.name] = gen
 
+    gen = no_extensions(Firefox_42())
+    configs[gen.name] = gen
+
+    gen = set_hello_version(Firefox_42(), (3, 2))
+    configs[gen.name] = gen
+
     gen = set_hello_version(Firefox_42(), (3, 4))
     configs[gen.name] = gen
 
@@ -201,16 +207,25 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = IE_8_Win_XP()
     configs[gen.name] = gen
 
+    gen = set_hello_version(IE_8_Win_XP(), (3, 2))
+    configs[gen.name] = gen
+
     gen = set_hello_version(IE_8_Win_XP(), (3, 4))
     configs[gen.name] = gen
 
     gen = IE_11_Win_7()
     configs[gen.name] = gen
 
+    gen = set_hello_version(IE_11_Win_7(), (3, 2))
+    configs[gen.name] = gen
+
     gen = no_extensions(IE_11_Win_7())
     configs[gen.name] = gen
 
     gen = no_sni(IE_11_Win_7())
+    configs[gen.name] = gen
+
+    gen = set_hello_version(no_sni(IE_11_Win_7()), (3, 2))
     configs[gen.name] = gen
 
     gen = set_hello_version(IE_11_Win_7(), (3, 5))
@@ -240,7 +255,7 @@ def scan_TLS_intolerancies(host, port, hostname):
         print(json.dumps(intolerancies))
         return
 
-    intolerancies["SSL \'3.254\'"] = all(not simple_inspector(results[name])
+    intolerancies["SSL 3.254"] = all(not simple_inspector(results[name])
                                          for name, conf in configs.items()
                                          if conf.version == (3, 254))
     intolerancies["TLS 1.4"] = all(not simple_inspector(results[name])
@@ -255,6 +270,9 @@ def scan_TLS_intolerancies(host, port, hostname):
     intolerancies["TLS 1.1"] = all(not simple_inspector(results[name])
                                    for name, conf in configs.items()
                                    if conf.version == (3, 2))
+    intolerancies["TLS 1.0"] = all(not simple_inspector(results[name])
+                                   for name, conf in configs.items()
+                                   if conf.version == (3, 1))
     # intolerancies["Xmas tree"] = not simple_inspector(results["Xmas tree"])
 
     print(json.dumps(intolerancies))
