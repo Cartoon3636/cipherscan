@@ -338,7 +338,7 @@ for r,d,flist in os.walk(path):
                         if val is True:
                             tempintolerancies[name] = 1
                 else:
-                    tempintolerancies['x:malformed reply'] = 1
+                    tempintolerancies['x:missing information'] = 1
 
             """ get some extra data about server """
             if 'renegotiation' in results:
