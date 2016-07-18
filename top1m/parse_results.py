@@ -332,8 +332,8 @@ for r,d,flist in os.walk(path):
                 except KeyError:
                     pass
 
-                if 'intolerancies' in results['configs']:
-                    intoler = results['configs']['intolerancies']
+                if 'intolerancies' in results:
+                    intoler = results['intolerancies']
                     for name, val in intoler.items():
                         if val is True:
                             tempintolerancies[name] = 1
