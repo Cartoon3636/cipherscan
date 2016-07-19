@@ -132,9 +132,11 @@ def verbose_inspector(desc, result):
             if sh.cipher_suite not in ch.cipher_suites:
                 ret += " FAILURE cipher suite mismatch"
                 return ret
+            name = CipherSuite.ietfNames[sh.cipher_suite] \
+                   if sh.cipher_suite in CipherSuite.ietfNames \
+                   else hex(sh.cipher_suite)
             ret += " OK: {0}, {1}".format(sh.server_version,
-                                          CipherSuite.
-                                          ietfNames[sh.cipher_suite])
+                                          name)
             return ret
     ret += " FAILURE "
     errors = []
@@ -255,22 +257,28 @@ def scan_TLS_intolerancies(host, port, hostname):
         print(json.dumps(intolerancies))
         return
 
-    intolerancies["SSL 3.254"] = all(not simple_inspector(results[name])
+    intolerancies["SSL 3.254"] = all(name in results and
+                                     not simple_inspector(results[name])
                                          for name, conf in configs.items()
                                          if conf.version == (3, 254))
-    intolerancies["TLS 1.4"] = all(not simple_inspector(results[name])
+    intolerancies["TLS 1.4"] = all(name in results and
+                                   not simple_inspector(results[name])
                                    for name, conf in configs.items()
                                    if conf.version == (3, 5))
-    intolerancies["TLS 1.3"] = all(not simple_inspector(results[name])
+    intolerancies["TLS 1.3"] = all(name in results and
+                                   not simple_inspector(results[name])
                                    for name, conf in configs.items()
                                    if conf.version == (3, 4))
-    intolerancies["TLS 1.2"] = all(not simple_inspector(results[name])
+    intolerancies["TLS 1.2"] = all(name in results and
+                                   not simple_inspector(results[name])
                                    for name, conf in configs.items()
                                    if conf.version == (3, 3))
-    intolerancies["TLS 1.1"] = all(not simple_inspector(results[name])
+    intolerancies["TLS 1.1"] = all(name in results and
+                                   not simple_inspector(results[name])
                                    for name, conf in configs.items()
                                    if conf.version == (3, 2))
-    intolerancies["TLS 1.0"] = all(not simple_inspector(results[name])
+    intolerancies["TLS 1.0"] = all(name in results and
+                                   not simple_inspector(results[name])
                                    for name, conf in configs.items()
                                    if conf.version == (3, 1))
     # intolerancies["Xmas tree"] = not simple_inspector(results["Xmas tree"])
