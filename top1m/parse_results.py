@@ -304,8 +304,6 @@ for r,d,flist in os.walk(path):
             if 'configs' in results:
                 tolerance = [' '] * len(fallback_ids)
                 for entry in results['configs']:
-                    if not 'tolerant' in entry:
-                        continue
                     config = results['configs'][entry]
 
                     if not entry in fallback_ids:
@@ -353,13 +351,13 @@ for r,d,flist in os.walk(path):
                 except KeyError:
                     pass
 
-                if 'intolerancies' in results:
-                    intoler = results['intolerancies']
-                    for name, val in intoler.items():
-                        if val is True:
-                            tempintolerancies[name] = 1
-                else:
-                    tempintolerancies['x:missing information'] = 1
+            if 'intolerancies' in results:
+                intoler = results['intolerancies']
+                for name, val in intoler.items():
+                    if val is True:
+                        tempintolerancies[name] = 1
+            else:
+                tempintolerancies['x:missing information'] = 1
 
             """ get some extra data about server """
             if 'renegotiation' in results:
