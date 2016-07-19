@@ -321,6 +321,31 @@ class Xmas_tree(HelloConfig):
         ch.compression_methods = list(range(0, 80))  # interesting ones are 0, 1
         return ch
 
+
+class HugeCipherList(HelloConfig):
+    """Client Hello with list of ciphers that doesn't fit a single record"""
+
+    def __init__(self):
+        super(HugeCipherList, self).__init__()
+        self._name = "Huge Cipher List"
+        self.record_version = (3, 1)
+        self.version = (3, 3)
+        self.ciphers = []
+        self.ciphers.extend(CipherSuite.ecdheEcdsaSuites)
+        self.ciphers.extend(CipherSuite.ecdheCertSuites)
+        self.ciphers.extend(CipherSuite.dheCertSuites)
+        self.ciphers.extend(CipherSuite.dheDssSuites)
+        self.ciphers.extend(CipherSuite.certSuites)
+        self.ciphers.extend(range(0x2000, 0x2000+8192))
+
+    def __call__(self, hostname):
+        del hostname
+        rand = numberToByteArray(random.getrandbits(256), 32)
+        ch = ClientHello().create(self.version, rand, bytearray(0),
+                                  self.ciphers)
+        return ch
+
+
 class IE_6(HelloConfig):
     """Create a Internet Explorer 6-like Client Hello message"""
 

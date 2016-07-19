@@ -14,7 +14,7 @@ import json
 
 from cscan.scanner import Scanner
 from cscan.config import Xmas_tree, IE_6, IE_8_Win_XP, \
-        IE_11_Win_7, IE_11_Win_8_1, Firefox_46, Firefox_42
+        IE_11_Win_7, IE_11_Win_8_1, Firefox_46, Firefox_42, HugeCipherList
 
 
 def no_sni(generator):
@@ -76,6 +76,19 @@ def no_extensions(generator):
         return ret
     generator.__call__ = ret_fun
     generator.modifications += ["no ext"]
+    return generator
+
+
+def truncate_ciphers_to_size(generator, size):
+    """Truncate list of ciphers until client hello is no bigger than size"""
+
+    def ret_fun(hostname, generator=generator.__call__, size=size):
+        ret = generator(hostname)
+        while len(ret.write()) > size:
+            ret.cipher_suites.pop()
+        return ret
+    generator.__call__ = ret_fun
+    generator.modifications += ["trunc {0}".format(size)]
     return generator
 
 
@@ -240,6 +253,12 @@ def scan_TLS_intolerancies(host, port, hostname):
     configs[gen.name] = gen
 
     gen = set_hello_version(IE_11_Win_8_1(), (3, 4))
+    configs[gen.name] = gen
+
+    gen = HugeCipherList()
+    configs[gen.name] = gen
+
+    gen = truncate_ciphers_to_size(HugeCipherList(), 16388)
     configs[gen.name] = gen
 
     results = {}
