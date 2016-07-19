@@ -109,6 +109,7 @@ class IE_6_ext_tls_1_0(IE_6):
         super(IE_6_ext_tls_1_0, self).__init__()
         self.modifications += ["TLSv1.0", "ext"]
         self.version = (3, 1)
+        self.record_version = (3, 0)
 
     def __call__(self, hostname):
         ret = super(IE_6_ext_tls_1_0, self).__call__(hostname)
