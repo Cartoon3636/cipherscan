@@ -302,6 +302,10 @@ def scan_TLS_intolerancies(host, port, hostname):
                                    for name, conf in configs.items()
                                    if conf.version == (3, 1))
     # intolerancies["Xmas tree"] = not simple_inspector(results["Xmas tree"])
+    # intolerancies["Huge Cipher List"] = not simple_inspector(
+    #         results["Huge Cipher List"])
+    # intolerancies["Huge Cipher List (trunc 16388)"] = not simple_inspector(
+    #         results["Huge Cipher List (trunc 16388)"])
 
     print(json.dumps(intolerancies))
 
