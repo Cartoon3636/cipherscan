@@ -14,7 +14,7 @@ import json
 
 from cscan.scanner import Scanner
 from cscan.config import Xmas_tree, IE_6, IE_8_Win_XP, \
-        IE_11_Win_7, IE_11_Win_8_1, Firefox_46, Firefox_42
+        IE_11_Win_7, IE_11_Win_8_1, Firefox_46, Firefox_42, HugeCipherList
 
 
 def no_sni(generator):
@@ -79,6 +79,19 @@ def no_extensions(generator):
     return generator
 
 
+def truncate_ciphers_to_size(generator, size):
+    """Truncate list of ciphers until client hello is no bigger than size"""
+
+    def ret_fun(hostname, generator=generator.__call__, size=size):
+        ret = generator(hostname)
+        while len(ret.write()) > size:
+            ret.cipher_suites.pop()
+        return ret
+    generator.__call__ = ret_fun
+    generator.modifications += ["trunc {0}".format(size)]
+    return generator
+
+
 def scan_with_config(host, port, conf, hostname, __sentry=None, __cache={}):
     assert __sentry is None
     key = (host, port, conf, hostname)
@@ -96,6 +109,7 @@ class IE_6_ext_tls_1_0(IE_6):
         super(IE_6_ext_tls_1_0, self).__init__()
         self.modifications += ["TLSv1.0", "ext"]
         self.version = (3, 1)
+        self.record_version = (3, 0)
 
     def __call__(self, hostname):
         ret = super(IE_6_ext_tls_1_0, self).__call__(hostname)
@@ -132,9 +146,11 @@ def verbose_inspector(desc, result):
             if sh.cipher_suite not in ch.cipher_suites:
                 ret += " FAILURE cipher suite mismatch"
                 return ret
+            name = CipherSuite.ietfNames[sh.cipher_suite] \
+                   if sh.cipher_suite in CipherSuite.ietfNames \
+                   else hex(sh.cipher_suite)
             ret += " OK: {0}, {1}".format(sh.server_version,
-                                          CipherSuite.
-                                          ietfNames[sh.cipher_suite])
+                                          name)
             return ret
     ret += " FAILURE "
     errors = []
@@ -240,6 +256,12 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = set_hello_version(IE_11_Win_8_1(), (3, 4))
     configs[gen.name] = gen
 
+    gen = HugeCipherList()
+    configs[gen.name] = gen
+
+    gen = truncate_ciphers_to_size(HugeCipherList(), 16388)
+    configs[gen.name] = gen
+
     results = {}
     for desc, conf in configs.items():
         results[desc] = scan_with_config(host, port, conf, hostname)
@@ -255,25 +277,35 @@ def scan_TLS_intolerancies(host, port, hostname):
         print(json.dumps(intolerancies))
         return
 
-    intolerancies["SSL 3.254"] = all(not simple_inspector(results[name])
+    intolerancies["SSL 3.254"] = all(name in results and
+                                     not simple_inspector(results[name])
                                          for name, conf in configs.items()
                                          if conf.version == (3, 254))
-    intolerancies["TLS 1.4"] = all(not simple_inspector(results[name])
+    intolerancies["TLS 1.4"] = all(name in results and
+                                   not simple_inspector(results[name])
                                    for name, conf in configs.items()
                                    if conf.version == (3, 5))
-    intolerancies["TLS 1.3"] = all(not simple_inspector(results[name])
+    intolerancies["TLS 1.3"] = all(name in results and
+                                   not simple_inspector(results[name])
                                    for name, conf in configs.items()
                                    if conf.version == (3, 4))
-    intolerancies["TLS 1.2"] = all(not simple_inspector(results[name])
+    intolerancies["TLS 1.2"] = all(name in results and
+                                   not simple_inspector(results[name])
                                    for name, conf in configs.items()
                                    if conf.version == (3, 3))
-    intolerancies["TLS 1.1"] = all(not simple_inspector(results[name])
+    intolerancies["TLS 1.1"] = all(name in results and
+                                   not simple_inspector(results[name])
                                    for name, conf in configs.items()
                                    if conf.version == (3, 2))
-    intolerancies["TLS 1.0"] = all(not simple_inspector(results[name])
+    intolerancies["TLS 1.0"] = all(name in results and
+                                   not simple_inspector(results[name])
                                    for name, conf in configs.items()
                                    if conf.version == (3, 1))
     # intolerancies["Xmas tree"] = not simple_inspector(results["Xmas tree"])
+    # intolerancies["Huge Cipher List"] = not simple_inspector(
+    #         results["Huge Cipher List"])
+    # intolerancies["Huge Cipher List (trunc 16388)"] = not simple_inspector(
+    #         results["Huge Cipher List (trunc 16388)"])
 
     print(json.dumps(intolerancies))
 

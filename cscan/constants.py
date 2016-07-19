@@ -1,105 +1,115 @@
 import tlslite.constants
 
-class CipherSuite(tlslite.constants.CipherSuite):
-    """Mapping between ciphersuite names and numeric IDs"""
+from tlslite.constants import CipherSuite
 
-    #ietfNames = dict(tlslite.constants.CipherSuite.ietfNames)
-    ietfNames = tlslite.constants.CipherSuite.ietfNames
-    ecdheEcdsaSuites = []
-    tlslite.constants.CipherSuite.ecdheEcdsaSuites = ecdheEcdsaSuites
-    #ecdheCertSuites = list(tlslite.constants.CipherSuite.ecdheCertSuites)
-    #dheCertSuites = list(tlslite.constants.CipherSuite.dheCertSuites)
-    #certSuites = list(tlslite.constants.CipherSuite.certSuites)
+CipherSuite.ecdheEcdsaSuites = []
 
-    # RFC 5289
-    TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 = 0xC02C
-    ietfNames[0xC02C] = 'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384'
-    ecdheEcdsaSuites.append(TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384)
+# RFC 5289
+CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 = 0xC02C
+CipherSuite.ietfNames[0xC02C] = 'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384'
+CipherSuite.ecdheEcdsaSuites.append(CipherSuite.
+                                    TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384)
 
-    TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 = 0xC02B
-    ietfNames[0xC02B] = 'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256'
-    ecdheEcdsaSuites.append(TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256)
+CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 = 0xC02B
+CipherSuite.ietfNames[0xC02B] = 'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256'
+CipherSuite.ecdheEcdsaSuites.append(CipherSuite.
+                                    TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256)
 
-    TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384 = 0xC024
-    ietfNames[0xC024] = 'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384'
-    ecdheEcdsaSuites.append(TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384)
+CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384 = 0xC024
+CipherSuite.ietfNames[0xC024] = 'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384'
+CipherSuite.ecdheEcdsaSuites.append(CipherSuite.
+                                    TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384)
 
-    TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 = 0xC023
-    ietfNames[0xC023] = 'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256'
-    ecdheEcdsaSuites.append(TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256)
+CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 = 0xC023
+CipherSuite.ietfNames[0xC023] = 'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256'
+CipherSuite.ecdheEcdsaSuites.append(CipherSuite.
+                                    TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256)
 
-    # RFC 4492
-    TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA = 0xC00A
-    ietfNames[0xC00A] = 'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA'
-    ecdheEcdsaSuites.append(TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA)
+# RFC 4492
+CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA = 0xC00A
+CipherSuite.ietfNames[0xC00A] = 'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA'
+CipherSuite.ecdheEcdsaSuites.append(CipherSuite.
+                                    TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA)
 
-    TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA = 0xC009
-    ietfNames[0xC009] = 'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA'
-    ecdheEcdsaSuites.append(TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA)
+CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA = 0xC009
+CipherSuite.ietfNames[0xC009] = 'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA'
+CipherSuite.ecdheEcdsaSuites.append(CipherSuite.
+                                    TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA)
 
-    # RFC 7251
-    TLS_ECDHE_ECDSA_WITH_AES_256_CCM = 0xC0Ad
-    ietfNames[0xC0AD] = 'TLS_ECDHE_ECDSA_WITH_AES_256_CCM'
-    ecdheEcdsaSuites.append(TLS_ECDHE_ECDSA_WITH_AES_256_CCM)
+# RFC 7251
+CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CCM = 0xC0Ad
+CipherSuite.ietfNames[0xC0AD] = 'TLS_ECDHE_ECDSA_WITH_AES_256_CCM'
+CipherSuite.ecdheEcdsaSuites.append(CipherSuite.
+                                    TLS_ECDHE_ECDSA_WITH_AES_256_CCM)
 
-    TLS_ECDHE_ECDSA_WITH_AES_128_CCM = 0xC0AC
-    ietfNames[0xC0AC] = 'TLS_ECDHE_ECDSA_WITH_AES_128_CCM'
-    ecdheEcdsaSuites.append(TLS_ECDHE_ECDSA_WITH_AES_128_CCM)
+CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CCM = 0xC0AC
+CipherSuite.ietfNames[0xC0AC] = 'TLS_ECDHE_ECDSA_WITH_AES_128_CCM'
+CipherSuite.ecdheEcdsaSuites.append(CipherSuite.
+                                    TLS_ECDHE_ECDSA_WITH_AES_128_CCM)
 
-    TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8 = 0xC0AF
-    ietfNames[0xC0AF] = 'TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8'
-    ecdheEcdsaSuites.append(TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8)
+CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8 = 0xC0AF
+CipherSuite.ietfNames[0xC0AF] = 'TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8'
+CipherSuite.ecdheEcdsaSuites.append(CipherSuite.
+                                    TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8)
 
-    TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8 = 0xC0AE
-    ietfNames[0xC0AE] = 'TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8'
-    ecdheEcdsaSuites.append(TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8)
+CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8 = 0xC0AE
+CipherSuite.ietfNames[0xC0AE] = 'TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8'
+CipherSuite.ecdheEcdsaSuites.append(CipherSuite.
+                                    TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8)
 
-    tlslite.constants.CipherSuite.ecdhAllSuites.extend(ecdheEcdsaSuites)
-    tlslite.constants.CipherSuite.certAllSuites.extend(ecdheEcdsaSuites)
+CipherSuite.ecdhAllSuites.extend(CipherSuite.ecdheEcdsaSuites)
+CipherSuite.certAllSuites.extend(CipherSuite.ecdheEcdsaSuites)
 
-    # obsolete stuff
-    TLS_RSA_WITH_DES_CBC_SHA = 0x0009
-    ietfNames[0x0009] = 'TLS_RSA_WITH_DES_CBC_SHA'
+# obsolete stuff
+CipherSuite.TLS_RSA_WITH_DES_CBC_SHA = 0x0009
+CipherSuite.ietfNames[0x0009] = 'TLS_RSA_WITH_DES_CBC_SHA'
 
-    TLS_RSA_EXPORT1024_WITH_RC4_56_SHA = 0x0064
-    ietfNames[0x0064] = 'TLS_RSA_EXPORT1024_WITH_RC4_56_SHA'
-    TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA = 0x0062
-    ietfNames[0x0062] = 'TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA'
-    TLS_RSA_EXPORT_WITH_RC4_40_MD5 = 0x0003
-    ietfNames[0x0003] = 'TLS_RSA_EXPORT_WITH_RC4_40_MD5'
-    TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5 = 0x0006
-    ietfNames[0x0006] = 'TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5'
+CipherSuite.TLS_RSA_EXPORT1024_WITH_RC4_56_SHA = 0x0064
+CipherSuite.ietfNames[0x0064] = 'TLS_RSA_EXPORT1024_WITH_RC4_56_SHA'
+CipherSuite.TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA = 0x0062
+CipherSuite.ietfNames[0x0062] = 'TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA'
+CipherSuite.TLS_RSA_EXPORT_WITH_RC4_40_MD5 = 0x0003
+CipherSuite.ietfNames[0x0003] = 'TLS_RSA_EXPORT_WITH_RC4_40_MD5'
+CipherSuite.TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5 = 0x0006
+CipherSuite.ietfNames[0x0006] = 'TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5'
 
-    # DSS
-    dheDssSuites = []
+# DSS
+CipherSuite.dheDssSuites = []
 
-    TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA = 0x0013
-    ietfNames[0x0013] = 'TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA'
-    dheDssSuites.append(TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA)
+CipherSuite.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA = 0x0013
+CipherSuite.ietfNames[0x0013] = 'TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA'
+CipherSuite.dheDssSuites.append(CipherSuite.
+                                TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA)
 
-    TLS_DHE_DSS_WITH_DES_CBC_SHA = 0x0012
-    ietfNames[0x0012] = 'TLS_DHE_DSS_WITH_DES_CBC_SHA'
-    dheDssSuites.append(TLS_DHE_DSS_WITH_DES_CBC_SHA)
+CipherSuite.TLS_DHE_DSS_WITH_DES_CBC_SHA = 0x0012
+CipherSuite.ietfNames[0x0012] = 'TLS_DHE_DSS_WITH_DES_CBC_SHA'
+CipherSuite.dheDssSuites.append(CipherSuite.
+                                TLS_DHE_DSS_WITH_DES_CBC_SHA)
 
-    TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA = 0x0063
-    ietfNames[0x0063] = 'TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA'
-    dheDssSuites.append(TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA)
+CipherSuite.TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA = 0x0063
+CipherSuite.ietfNames[0x0063] = 'TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA'
+CipherSuite.dheDssSuites.append(CipherSuite.
+                                TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA)
 
-    TLS_DHE_DSS_WITH_AES_128_CBC_SHA = 0x0032
-    ietfNames[0x0032] = 'TLS_DHE_DSS_WITH_AES_128_CBC_SHA'
-    dheDssSuites.append(TLS_DHE_DSS_WITH_AES_128_CBC_SHA)
+CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA = 0x0032
+CipherSuite.ietfNames[0x0032] = 'TLS_DHE_DSS_WITH_AES_128_CBC_SHA'
+CipherSuite.dheDssSuites.append(CipherSuite.
+                                TLS_DHE_DSS_WITH_AES_128_CBC_SHA)
 
-    TLS_DHE_DSS_WITH_AES_256_CBC_SHA = 0x0038
-    ietfNames[0x0038] = 'TLS_DHE_DSS_WITH_AES_256_CBC_SHA'
-    dheDssSuites.append(TLS_DHE_DSS_WITH_AES_256_CBC_SHA)
+CipherSuite.TLS_DHE_DSS_WITH_AES_256_CBC_SHA = 0x0038
+CipherSuite.ietfNames[0x0038] = 'TLS_DHE_DSS_WITH_AES_256_CBC_SHA'
+CipherSuite.dheDssSuites.append(CipherSuite.
+                                TLS_DHE_DSS_WITH_AES_256_CBC_SHA)
 
-    TLS_DHE_DSS_WITH_AES_128_CBC_SHA256 = 0x0040
-    ietfNames[0x0040] = 'TLS_DHE_DSS_WITH_AES_128_CBC_SHA256'
-    dheDssSuites.append(TLS_DHE_DSS_WITH_AES_128_CBC_SHA256)
+CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256 = 0x0040
+CipherSuite.ietfNames[0x0040] = 'TLS_DHE_DSS_WITH_AES_128_CBC_SHA256'
+CipherSuite.dheDssSuites.append(CipherSuite.
+                                TLS_DHE_DSS_WITH_AES_128_CBC_SHA256)
 
-    TLS_DHE_DSS_WITH_AES_256_CBC_SHA256 = 0x006a
-    ietfNames[0x006a] = 'TLS_DHE_DSS_WITH_AES_256_CBC_SHA256'
-    dheDssSuites.append(TLS_DHE_DSS_WITH_AES_256_CBC_SHA256)
+CipherSuite.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256 = 0x006a
+CipherSuite.ietfNames[0x006a] = 'TLS_DHE_DSS_WITH_AES_256_CBC_SHA256'
+CipherSuite.dheDssSuites.append(CipherSuite.
+                                TLS_DHE_DSS_WITH_AES_256_CBC_SHA256)
 
 class ExtensionType(tlslite.constants.ExtensionType):
     """Definitions of TLS extension IDs"""
