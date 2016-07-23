@@ -8,11 +8,11 @@ except ImportError:
 
 from tlslite.messages import ClientHello
 from tlslite.utils.codec import Parser
-from cscan.config import firefox_42, xmas_tree_tls_1_3
+from cscan.config import Firefox_42, Xmas_tree
 
 class TestFirefox(unittest.TestCase):
     def test_firefox_42(self):
-        ch = firefox_42(bytearray(b'example.com'))
+        ch = Firefox_42()(bytearray(b'example.com'))
 
         self.assertIsNotNone(ch)
         self.assertIsInstance(ch, ClientHello)
@@ -20,14 +20,14 @@ class TestFirefox(unittest.TestCase):
 
 class TestXmasTree(unittest.TestCase):
     def test_xmas_tree_tls_1_3(self):
-        ch = xmas_tree_tls_1_3(bytearray(b'example.com'))
+        ch = Xmas_tree()(bytearray(b'example.com'))
 
         self.assertIsNotNone(ch)
         self.assertIsInstance(ch, ClientHello)
-        self.assertEqual(len(ch.write()), 1586)
+        self.assertEqual(len(ch.write()), 2792)
 
     def test_xmas_tree_tls_1_3_parse(self):
-        ch = xmas_tree_tls_1_3(bytearray(b'example.com'))
+        ch = Xmas_tree()(bytearray(b'example.com'))
 
         parser = Parser(ch.write()[1:])
 
