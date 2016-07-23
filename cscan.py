@@ -99,6 +99,35 @@ def truncate_ciphers_to_size(generator, size):
     return generator
 
 
+def append_ciphers_to_size(generator, size):
+    """
+    Add ciphers from the 0x2000-0xa000 range until size is reached
+
+    Increases the size of the Client Hello message until it is at least
+    `size` bytes long. Uses cipher ID's from the 0x2000-0xc000 range to do
+    it (0x5600, a.k.a TLS_FALLBACK_SCSV, excluded)
+    """
+
+    def ret_fun(self, hostname, size=size):
+        ret = super(type(self), self).__call__(hostname)
+        ciphers_iter = iter(range(0x2000, 0xc000))
+        ciphers_present = set(ret.cipher_suites)
+        bytes_to_add = size - len(ret.write())
+        while bytes_to_add > 0:
+            ciph = next(ciphers_iter)
+            # don't put ciphers with special meaning or already present
+            if ciph == CipherSuite.TLS_FALLBACK_SCSV or \
+               ciph in ciphers_present:
+                continue
+            ciphers_present.add(ciph)
+            ret.cipher_suites.append(ciph)
+            bytes_to_add -= 2
+        return ret
+    patch_call(generator, ret_fun)
+    generator.modifications += ["append {0}".format(size)]
+    return generator
+
+
 def scan_with_config(host, port, conf, hostname, __sentry=None, __cache={}):
     assert __sentry is None
     key = (host, port, conf, hostname)
@@ -271,6 +300,10 @@ def scan_TLS_intolerancies(host, port, hostname):
 
     gen = VeryCompatible()
     configs[gen.name] = gen
+
+    gen = append_ciphers_to_size(VeryCompatible(), 2**16)
+    configs[gen.name] = gen
+
     results = {}
     for desc, conf in configs.items():
         results[desc] = scan_with_config(host, port, conf, hostname)
