@@ -346,6 +346,82 @@ class HugeCipherList(HelloConfig):
         return ch
 
 
+class VeryCompatible(HelloConfig):
+    """
+    Cipher compatible client hello with minimal intolerancies
+
+    Create a Client Hello that can connect to as many servers as possible
+    without triggering intolerancies (with the exception of TLS extension
+    intolerance)
+    """
+    def __init__(self):
+        super(VeryCompatible, self).__init__()
+        self._name = "Very Compatible"
+        self.version = (3, 3)
+        self.record_version = (3, 1)
+        self.ciphers = [CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+                        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+                        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+                        CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
+                        CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
+                        CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+                        CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256,
+                        CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
+                        CipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256,
+                        CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
+                        CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA,
+                        CipherSuite.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+                        CipherSuite.TLS_RSA_WITH_RC4_128_SHA,
+                        CipherSuite.TLS_RSA_WITH_RC4_128_MD5,
+                        CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV]
+
+    def __call__(self, hostname):
+        ext = []
+        if hostname is not None:
+            ext.append(SNIExtension().create(hostname))
+        ext.append(SupportedGroupsExtension().create([GroupName.secp256r1,
+                                                      GroupName.secp384r1,
+                                                      GroupName.secp521r1]))
+        ext.append(ECPointFormatsExtension().create([ECPointFormat.uncompressed]))
+        ext.append(TLSExtension(extType=ExtensionType.session_ticket))
+        ext.append(NPNExtension())
+        ext.append(TLSExtension(extType=ExtensionType.alpn)
+                   .create(bytearray(b'\x00\x15' +
+                                     b'\x02' + b'h2' +
+                                     b'\x08' + b'spdy/3.1' +
+                                     b'\x08' + b'http/1.1')))
+        ext.append(TLSExtension(extType=ExtensionType.status_request)
+                   .create(bytearray(b'\x01' +
+                                     b'\x00\x00' +
+                                     b'\x00\x00')))
+        sig_algs = []
+        for alg in ['sha256', 'sha384', 'sha512', 'sha1']:
+            sig_algs.append((getattr(HashAlgorithm, alg),
+                             SignatureAlgorithm.rsa))
+        for alg in ['sha256', 'sha384', 'sha512', 'sha1']:
+            sig_algs.append((getattr(HashAlgorithm, alg),
+                             SignatureAlgorithm.ecdsa))
+        for alg in ['sha256', 'sha1']:
+            sig_algs.append((getattr(HashAlgorithm, alg),
+                             SignatureAlgorithm.dsa))
+        ext.append(SignatureAlgorithmsExtension()
+                   .create(sig_algs))
+
+        # we're not doing any crypto with it, just need "something"
+        # TODO put a unix time in first bytes
+        rand = numberToByteArray(random.getrandbits(256), 32)
+
+        ch = ClientHello().create(self.version, rand, bytearray(0),
+                                  self.ciphers, extensions=ext)
+        return ch
+
+
 class IE_6(HelloConfig):
     """Create a Internet Explorer 6-like Client Hello message"""
 

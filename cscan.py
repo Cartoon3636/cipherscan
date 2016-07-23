@@ -14,7 +14,8 @@ import json
 
 from cscan.scanner import Scanner
 from cscan.config import Xmas_tree, IE_6, IE_8_Win_XP, \
-        IE_11_Win_7, IE_11_Win_8_1, Firefox_46, Firefox_42, HugeCipherList
+        IE_11_Win_7, IE_11_Win_8_1, Firefox_46, Firefox_42, HugeCipherList, \
+        VeryCompatible
 
 def patch_call(instance, func):
     class _(type(instance)):
@@ -268,6 +269,8 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = truncate_ciphers_to_size(HugeCipherList(), 16388)
     configs[gen.name] = gen
 
+    gen = VeryCompatible()
+    configs[gen.name] = gen
     results = {}
     for desc, conf in configs.items():
         results[desc] = scan_with_config(host, port, conf, hostname)
