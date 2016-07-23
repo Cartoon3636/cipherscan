@@ -3,6 +3,8 @@
 
 """Find an itolerance through bisecting Client Hello"""
 
+import copy
+
 def list_union(first, second):
     """Return an union between two lists, preserving order"""
     first_i = iter(first)
@@ -61,3 +63,46 @@ def bisect_lists(first, second):
     intersection = first_s & second_s
 
     return [x for x in union if x in half_diff or x in intersection]
+
+
+def bisect_hellos(first, second):
+    """Return a client hello that is in the "middle" of two other"""
+    first_list = first.cipher_suites
+    second_list = second.cipher_suites
+
+    ret = copy.deepcopy(first)
+    ret.cipher_suites = bisect_lists(first.cipher_suites, second.cipher_suites)
+
+    # TODO: extensions
+    # TODO: compression methods
+    return ret
+
+class Bisect(object):
+    """
+    Perform a bisection between two Client Hello's to find intolerance
+
+    Tries to find a cause for intolerance by using a bisection-like
+    algorithm
+    """
+
+    def __init__(self, good, bad, hostname, callback):
+        """Set the generators for good and bad hello's and callback to test"""
+        self.good = good
+        self.bad = bad
+        self.hostname = hostname
+        self.callback = callback
+
+    def run(self):
+        good_hello = self.good(self.hostname)
+        bad_hello = self.bad(self.hostname)
+        middle = bisect_hellos(good_hello, bad_hello)
+
+        while good_hello.write() != middle.write() and \
+                middle.write() != bad_hello.write():
+            if self.callback(middle):
+                good_hello = middle
+            else:
+                bad_hello = middle
+            middle = bisect_hellos(good_hello, bad_hello)
+
+        return (good_hello, bad_hello)

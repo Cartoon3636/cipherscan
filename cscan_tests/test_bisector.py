@@ -6,7 +6,8 @@ try:
 except ImportError:
     import unittest
 
-from cscan.bisector import bisect_lists, list_union
+from cscan.config import HugeCipherList, VeryCompatible
+from cscan.bisector import bisect_lists, list_union, Bisect
 
 class TestListUnion(unittest.TestCase):
     def test_identical(self):
@@ -148,3 +149,25 @@ class TestBisectLists(unittest.TestCase):
         b = [1, 2, 3, 5]
         c = bisect_lists(a, b)
         self.assertEqual(c, [1, 2, 3, 5])
+
+class TestBisect(unittest.TestCase):
+    def test___init__(self):
+        b = Bisect(None, None, None, None)
+        self.assertIsNotNone(b)
+
+    def test_run(self):
+        def test_cb(hello):
+            return len(hello.write()) <= 2**14
+
+        bad = HugeCipherList()
+        good = VeryCompatible()
+        self.assertGreater(len(bad('').write()), 2**14)
+        self.assertLess(len(good('').write()), 2**14)
+
+        bi = Bisect(good, bad, "localhost", test_cb)
+
+        #import pdb; pdb.set_trace()
+        a, b = bi.run()
+
+        self.assertEqual(len(a.write()), 2**14-1)
+        self.assertEqual(len(b.write()), 2**14+1)
