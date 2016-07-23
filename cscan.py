@@ -14,16 +14,24 @@ import json
 
 from cscan.scanner import Scanner
 from cscan.config import Xmas_tree, IE_6, IE_8_Win_XP, \
-        IE_11_Win_7, IE_11_Win_8_1, Firefox_46, Firefox_42, HugeCipherList
+        IE_11_Win_7, IE_11_Win_8_1, Firefox_46, Firefox_42, HugeCipherList, \
+        VeryCompatible
+from cscan.bisector import Bisect
+
+def patch_call(instance, func):
+    class _(type(instance)):
+        def __call__(self, *args, **kwargs):
+            return func(self, *args, **kwargs)
+    instance.__class__ = _
 
 
 def no_sni(generator):
-    def ret_fun(hostname, generator=generator.__call__):
-        ret = generator(hostname)
+    def ret_fun(self, hostname):
+        ret = super(type(self), self).__call__(hostname)
         ret.extensions = [i for i in ret.extensions
                           if not isinstance(i, SNIExtension)]
         return ret
-    generator.__call__ = ret_fun
+    patch_call(generator, ret_fun)
     generator.modifications += ["no SNI"]
     return generator
 
@@ -54,11 +62,11 @@ def set_record_version(generator, version):
     generator.record_version = version
     generator.ciphers = [i for i in generator.ciphers if i <= 0xffff]
 
-    def ret_fun(hostname, generator=generator.__call__):
-        ret = generator(hostname)
+    def ret_fun(self, hostname):
+        ret = super(type(self), self).__call__(hostname)
         ret.ssl2 = False
         return ret
-    generator.__call__ = ret_fun
+    patch_call(generator, ret_fun)
 
     version_name = proto_versions.get(version, None)
     if version_name is None:
@@ -70,11 +78,11 @@ def set_record_version(generator, version):
 def no_extensions(generator):
     """Remove extensions"""
 
-    def ret_fun(hostname, generator=generator.__call__):
-        ret = generator(hostname)
+    def ret_fun(self, hostname):
+        ret = super(type(self), self).__call__(hostname)
         ret.extensions = None
         return ret
-    generator.__call__ = ret_fun
+    patch_call(generator, ret_fun)
     generator.modifications += ["no ext"]
     return generator
 
@@ -82,13 +90,42 @@ def no_extensions(generator):
 def truncate_ciphers_to_size(generator, size):
     """Truncate list of ciphers until client hello is no bigger than size"""
 
-    def ret_fun(hostname, generator=generator.__call__, size=size):
-        ret = generator(hostname)
+    def ret_fun(self, hostname, size=size):
+        ret = super(type(self), self).__call__(hostname)
         while len(ret.write()) > size:
             ret.cipher_suites.pop()
         return ret
-    generator.__call__ = ret_fun
+    patch_call(generator, ret_fun)
     generator.modifications += ["trunc {0}".format(size)]
+    return generator
+
+
+def append_ciphers_to_size(generator, size):
+    """
+    Add ciphers from the 0x2000-0xa000 range until size is reached
+
+    Increases the size of the Client Hello message until it is at least
+    `size` bytes long. Uses cipher ID's from the 0x2000-0xc000 range to do
+    it (0x5600, a.k.a TLS_FALLBACK_SCSV, excluded)
+    """
+
+    def ret_fun(self, hostname, size=size):
+        ret = super(type(self), self).__call__(hostname)
+        ciphers_iter = iter(range(0x2000, 0xc000))
+        ciphers_present = set(ret.cipher_suites)
+        bytes_to_add = size - len(ret.write())
+        while bytes_to_add > 0:
+            ciph = next(ciphers_iter)
+            # don't put ciphers with special meaning or already present
+            if ciph == CipherSuite.TLS_FALLBACK_SCSV or \
+               ciph in ciphers_present:
+                continue
+            ciphers_present.add(ciph)
+            ret.cipher_suites.append(ciph)
+            bytes_to_add -= 2
+        return ret
+    patch_call(generator, ret_fun)
+    generator.modifications += ["append {0}".format(size)]
     return generator
 
 
@@ -262,6 +299,12 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = truncate_ciphers_to_size(HugeCipherList(), 16388)
     configs[gen.name] = gen
 
+    gen = VeryCompatible()
+    configs[gen.name] = gen
+
+    gen = append_ciphers_to_size(VeryCompatible(), 2**16)
+    configs[gen.name] = gen
+
     results = {}
     for desc, conf in configs.items():
         results[desc] = scan_with_config(host, port, conf, hostname)
@@ -301,6 +344,21 @@ def scan_TLS_intolerancies(host, port, hostname):
                                    not simple_inspector(results[name])
                                    for name, conf in configs.items()
                                    if conf.version == (3, 1))
+
+    if not simple_inspector(scan_with_config(host, port,
+            configs["Very Compatible (append 65536)"], hostname)) and \
+            simple_inspector(scan_with_config(host, port,
+                configs["Very Compatible"], hostname)):
+        bad = configs["Very Compatible (append 65536)"]
+        good = configs["Very Compatible"]
+        def test_cb(client_hello):
+            ret = scan_with_config(host, port, lambda _:client_hello, hostname)
+            return simple_inspector(ret)
+        bisect = Bisect(good, bad, hostname, test_cb)
+        good, bad = bisect.run()
+        intolerancies["size {0}".format(len(bad.write()))] = True
+        intolerancies["size {0}".format(len(good.write()))] = False
+
     # intolerancies["Xmas tree"] = not simple_inspector(results["Xmas tree"])
     # intolerancies["Huge Cipher List"] = not simple_inspector(
     #         results["Huge Cipher List"])

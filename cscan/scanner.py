@@ -83,10 +83,10 @@ class Scanner(object):
         sock = MessageSocket(raw_sock, defragger)
 
         if self.hostname is not None:
-            client_hello = self.hello_gen.__call__(bytearray(self.hostname,
-                                                             'utf-8'))
+            client_hello = self.hello_gen(bytearray(self.hostname,
+                                                     'utf-8'))
         else:
-            client_hello = self.hello_gen.__call__(None)
+            client_hello = self.hello_gen(None)
 
         # record layer version - TLSv1.x
         if hasattr(client_hello, 'record_version'):
