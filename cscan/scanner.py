@@ -106,6 +106,9 @@ class Scanner(object):
         if client_hello.ssl2:
             sock.version = (0, 2)
 
+        # save the record version used in the end for later analysis
+        client_hello.record_version = sock.version
+
         messages = [client_hello]
 
         handshake_parser = HandshakeParser()
@@ -129,9 +132,11 @@ class Scanner(object):
                 if header.type == ContentType.alert:
                     alert = Alert()
                     alert.parse(parser)
+                    alert.record_version = header.version
                     messages += [alert]
                 elif header.type == ContentType.handshake:
                     msg = handshake_parser.parse(parser)
+                    msg.record_version = header.version
                     messages += [msg]
                     if isinstance(msg, ServerHelloDone):
                         return messages
