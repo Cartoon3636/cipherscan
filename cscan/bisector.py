@@ -4,6 +4,7 @@
 """Find an itolerance through bisecting Client Hello"""
 
 import copy
+from tlslite.extensions import PaddingExtension
 
 def list_union(first, second):
     """Return an union between two lists, preserving order"""
@@ -77,6 +78,48 @@ def bisect_lists(first, second):
     return [x for x in union if x in half_diff or x in intersection]
 
 
+def bisect_padding_extension(first, second):
+    if first is None and second is None:
+        return None
+    if first is not None and second is None:
+        first, second = second, first
+    if first is None and second is not None:
+        if len(second.paddingData) == 0:
+            return None
+        elif len(second.paddingData) == 1:
+            return PaddingExtension()
+        else:
+            first = PaddingExtension()
+    return PaddingExtension().create((len(first.paddingData) +
+                                      len(second.paddingData)) // 2)
+
+
+def bisect_extensions(first, second):
+    # handle padding extension
+    if first is None and second is None:
+        return None
+    if first is not None and second is None:
+        first, second = second, first
+    if first is None and second is not None:
+        if len(second) == 0:
+            return None
+        if len(second) == 1:
+            return []
+        first = []
+    f_ext = next((x for x in first if isinstance(x, PaddingExtension)), None)
+    s_ext = next((x for x in second if isinstance(x, PaddingExtension)), None)
+
+    ext = bisect_padding_extension(f_ext, s_ext)
+    if ext is None:
+        # remove the extension
+        return [x for x in first if not isinstance(x, PaddingExtension)]
+    else:
+        if f_ext is None:
+            return first + [ext]
+        # replace extension
+        return [ext if isinstance(x, PaddingExtension) else x for x in first]
+
+
 def bisect_hellos(first, second):
     """Return a client hello that is in the "middle" of two other"""
     ret = copy.deepcopy(first)
@@ -89,6 +132,10 @@ def bisect_hellos(first, second):
     ret.extensions = bisect_lists(first.extensions, second.extensions)
     ret.compression_methods = bisect_lists(first.compression_methods,
                                            second.compression_methods)
+    if first.extensions == ret.extensions \
+            or second.extensions == ret.extensions:
+        ret.extensions = bisect_extensions(first.extensions,
+                                           second.extensions)
     return ret
 
 class Bisect(object):
