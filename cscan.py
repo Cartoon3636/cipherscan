@@ -209,7 +209,7 @@ def scan_TLS_intolerancies(host, port, hostname):
     host_up = any(simple_inspector(res) for res in results.values())
 
     if False:
-        for desc, ret in results.items():
+        for desc, ret in sorted(results.items()):
             print(verbose_inspector(desc, ret))
 
     intolerancies = {}
@@ -278,8 +278,8 @@ def scan_TLS_intolerancies(host, port, hostname):
     # intolerancies["Xmas tree"] = not simple_inspector(results["Xmas tree"])
     # intolerancies["Huge Cipher List"] = not simple_inspector(
     #         results["Huge Cipher List"])
-    # intolerancies["Huge Cipher List (trunc 16388)"] = not simple_inspector(
-    #         results["Huge Cipher List (trunc 16388)"])
+    # intolerancies["Huge Cipher List (trunc c/16388)"] = not simple_inspector(
+    #         results["Huge Cipher List (trunc c/16388)"])
 
     print(json.dumps(intolerancies))
 
