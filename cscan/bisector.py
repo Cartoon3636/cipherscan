@@ -89,7 +89,10 @@ class Bisect(object):
         """Set the generators for good and bad hello's and callback to test"""
         self.good = good
         self.bad = bad
-        self.hostname = bytearray(hostname, 'utf-8')
+        if hostname is not None:
+            self.hostname = bytearray(hostname, 'utf-8')
+        else:
+            self.hostname = None
         self.callback = callback
 
     def run(self):

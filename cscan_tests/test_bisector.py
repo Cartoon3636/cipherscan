@@ -164,7 +164,7 @@ class TestBisect(unittest.TestCase):
         self.assertGreater(len(bad('').write()), 2**14)
         self.assertLess(len(good('').write()), 2**14)
 
-        bi = Bisect(good, bad, b"localhost", test_cb)
+        bi = Bisect(good, bad, "localhost", test_cb)
 
         a, b = bi.run()
 
