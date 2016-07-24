@@ -50,6 +50,18 @@ def list_union(first, second):
 
 def bisect_lists(first, second):
     """Return a list that is in the "middle" between the given ones"""
+    # handle None special cases
+    if first is None and second is None:
+        return None
+    if first is not None and second is None:
+        first, second = second, first
+    if first is None and second is not None:
+        if len(second) == 0:
+            return None
+        elif len(second) == 1:
+            return []
+        else:
+            first = []
     # make the second lists always the longer one
     if len(first) > len(second):
         second, first = first, second

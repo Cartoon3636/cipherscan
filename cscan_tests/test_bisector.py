@@ -150,6 +150,36 @@ class TestBisectLists(unittest.TestCase):
         c = bisect_lists(a, b)
         self.assertEqual(c, [1, 2, 3, 5])
 
+    def test_one_empty(self):
+        a = []
+        b = [1, 2, 3, 4]
+        c = bisect_lists(a, b)
+        self.assertEqual(c, [1, 2])
+
+    def test_both_empty(self):
+        a = []
+        b = []
+        c = bisect_lists(a, b)
+        self.assertEqual(c, [])
+
+    def test_one_None(self):
+        a = None
+        b = [1, 2, 3, 4]
+        c = bisect_lists(a, b)
+        self.assertEqual(c, [1, 2])
+
+    def test_short_and_None(self):
+        a = None
+        b = [1]
+        c = bisect_lists(a, b)
+        self.assertEqual(c, [])
+
+    def test_empty_and_None(self):
+        a = None
+        b = []
+        c = bisect_lists(a, b)
+        self.assertEqual(c, None)
+
 class TestBisect(unittest.TestCase):
     def test___init__(self):
         b = Bisect(None, None, None, None)
