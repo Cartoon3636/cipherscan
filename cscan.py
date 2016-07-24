@@ -102,6 +102,7 @@ def verbose_inspector(desc, result):
 def scan_TLS_intolerancies(host, port, hostname):
     configs = {}
 
+    # Xmas tree configs
     gen = Xmas_tree()
     configs[gen.name] = gen
 
@@ -127,6 +128,10 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = set_record_version(gen, (3, 3))
     configs[gen.name] = gen
 
+    gen = no_extensions(Xmas_tree())
+    configs[gen.name] = gen
+
+    # Firefox 42 configs
     gen = Firefox_42()
     configs[gen.name] = gen
 
@@ -139,6 +144,7 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = set_hello_version(Firefox_42(), (3, 4))
     configs[gen.name] = gen
 
+    # Firefox 46 configs
     gen = Firefox_46()
     configs[gen.name] = gen
 
@@ -151,12 +157,14 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = set_hello_version(Firefox_46(), (3, 1))
     configs[gen.name] = gen
 
+    # IE 6 configs
     gen = IE_6()
     configs[gen.name] = gen
 
     gen = IE_6_ext_tls_1_0()
     configs[gen.name] = gen
 
+    # IE 8 configs
     gen = IE_8_Win_XP()
     configs[gen.name] = gen
 
@@ -166,6 +174,7 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = set_hello_version(IE_8_Win_XP(), (3, 4))
     configs[gen.name] = gen
 
+    # IE 11 on Win 7 configs
     gen = IE_11_Win_7()
     configs[gen.name] = gen
 
@@ -187,6 +196,7 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = set_hello_version(IE_11_Win_7(), (3, 254))
     configs[gen.name] = gen
 
+    # IE 11 on Win 8.1 configs
     gen = IE_11_Win_8_1()
     configs[gen.name] = gen
 
@@ -196,12 +206,14 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = set_hello_version(IE_11_Win_8_1(), (3, 4))
     configs[gen.name] = gen
 
+    # Huge Cipher List
     gen = HugeCipherList()
     configs[gen.name] = gen
 
     gen = truncate_ciphers_to_size(HugeCipherList(), 16388)
     configs[gen.name] = gen
 
+    # Very Compatible
     gen = VeryCompatible()
     configs[gen.name] = gen
 
@@ -215,6 +227,9 @@ def scan_TLS_intolerancies(host, port, hostname):
     configs[gen.name] = gen
 
     gen = extend_with_ext_to_size(VeryCompatible(), 16388)
+    configs[gen.name] = gen
+
+    gen = no_extensions(VeryCompatible())
     configs[gen.name] = gen
 
     results = {}
@@ -256,6 +271,11 @@ def scan_TLS_intolerancies(host, port, hostname):
                                    not simple_inspector(results[name])
                                    for name, conf in configs.items()
                                    if conf.version == (3, 1))
+    intolerancies["extensions"] = all(name in results and
+                                      not simple_inspector(results[name])
+                                      for name, conf in configs.items()
+                                      if results[name][0].extensions
+                                      and not results[name][0].ssl2)
 
     if not simple_inspector(scan_with_config(host, port,
             configs["Very Compatible (append c/65536)"], hostname)) and \
