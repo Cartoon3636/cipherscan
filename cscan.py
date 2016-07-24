@@ -120,6 +120,10 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = set_record_version(gen, (3, 2))
     configs[gen.name] = gen
 
+    gen = set_hello_version(Xmas_tree(), (3, 2))
+    gen = set_record_version(gen, (3, 1))
+    configs[gen.name] = gen
+
     gen = set_hello_version(Xmas_tree(), (3, 1))
     gen = set_record_version(gen, (3, 1))
     configs[gen.name] = gen
@@ -129,6 +133,9 @@ def scan_TLS_intolerancies(host, port, hostname):
     configs[gen.name] = gen
 
     gen = no_extensions(Xmas_tree())
+    configs[gen.name] = gen
+
+    gen = no_extensions(set_hello_version(Xmas_tree(), (3, 5)))
     configs[gen.name] = gen
 
     # Firefox 42 configs
@@ -154,6 +161,9 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = set_hello_version(Firefox_46(), (3, 5))
     configs[gen.name] = gen
 
+    gen = no_extensions(set_hello_version(Firefox_46(), (3, 5)))
+    configs[gen.name] = gen
+
     gen = set_hello_version(Firefox_46(), (3, 1))
     configs[gen.name] = gen
 
@@ -171,7 +181,13 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = set_hello_version(IE_8_Win_XP(), (3, 2))
     configs[gen.name] = gen
 
+    gen = set_hello_version(IE_8_Win_XP(), (3, 3))
+    configs[gen.name] = gen
+
     gen = set_hello_version(IE_8_Win_XP(), (3, 4))
+    configs[gen.name] = gen
+
+    gen = set_hello_version(IE_8_Win_XP(), (3, 5))
     configs[gen.name] = gen
 
     # IE 11 on Win 7 configs
@@ -230,6 +246,21 @@ def scan_TLS_intolerancies(host, port, hostname):
     configs[gen.name] = gen
 
     gen = no_extensions(VeryCompatible())
+    configs[gen.name] = gen
+
+    gen = no_extensions(set_hello_version(VeryCompatible(), (3, 254)))
+    configs[gen.name] = gen
+
+    gen = no_extensions(set_hello_version(VeryCompatible(), (3, 5)))
+    configs[gen.name] = gen
+
+    gen = no_extensions(set_hello_version(VeryCompatible(), (3, 4)))
+    configs[gen.name] = gen
+
+    gen = no_extensions(set_hello_version(VeryCompatible(), (3, 2)))
+    configs[gen.name] = gen
+
+    gen = no_extensions(set_hello_version(VeryCompatible(), (3, 1)))
     configs[gen.name] = gen
 
     results = {}
