@@ -83,10 +83,15 @@ def bisect_hellos(first, second):
     second_list = second.cipher_suites
 
     ret = copy.deepcopy(first)
-    ret.cipher_suites = bisect_lists(first.cipher_suites, second.cipher_suites)
 
-    # TODO: extensions
-    # TODO: compression methods
+    ret.client_version = ((first.client_version[0] + second.client_version[0])
+                          // 2,
+                          (first.client_version[1] + second.client_version[1])
+                          // 2)
+    ret.cipher_suites = bisect_lists(first.cipher_suites, second.cipher_suites)
+    ret.extensions = bisect_lists(first.extensions, second.extensions)
+    ret.compression_methods = bisect_lists(first.compression_methods,
+                                           second.compression_methods)
     return ret
 
 class Bisect(object):

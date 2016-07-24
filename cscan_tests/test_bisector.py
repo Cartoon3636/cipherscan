@@ -6,7 +6,9 @@ try:
 except ImportError:
     import unittest
 
-from cscan.config import HugeCipherList, VeryCompatible
+from tlslite.extensions import SignatureAlgorithmsExtension, SNIExtension, \
+        SupportedGroupsExtension, ECPointFormatsExtension, TLSExtension
+from cscan.config import HugeCipherList, VeryCompatible, IE_8_Win_XP
 from cscan.bisector import bisect_lists, list_union, Bisect
 
 class TestListUnion(unittest.TestCase):
@@ -200,3 +202,27 @@ class TestBisect(unittest.TestCase):
 
         self.assertEqual(len(a.write()), 2**14-1)
         self.assertEqual(len(b.write()), 2**14+1)
+
+    def test_run_with_extensions(self):
+        def test_cb(hello):
+            if not hello.extensions:
+                return True
+            a = next((x for x in hello.extensions
+                      if isinstance(x, SignatureAlgorithmsExtension)), None)
+            return a is None
+        good = IE_8_Win_XP()
+        bad = VeryCompatible()
+
+        self.assertTrue(test_cb(good('localhost')))
+        self.assertFalse(test_cb(bad('localhost')))
+
+        bi = Bisect(good, bad, "localhost", test_cb)
+
+        a, b = bi.run()
+
+        ext = next((x for x in a.extensions
+                    if isinstance(x, SignatureAlgorithmsExtension)), None)
+        self.assertIsNone(ext)
+        ext = next((x for x in b.extensions
+                    if isinstance(x, SignatureAlgorithmsExtension)), None)
+        self.assertIsNotNone(ext)
