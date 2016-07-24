@@ -11,6 +11,10 @@ from tlslite.utils.compat import b2a_hex
 from .constants import ExtensionType, GroupName
 import cscan.messages as messages
 
+# make TLSExtensions hashable (__eq__ is already defined in base class)
+tlslite.extensions.TLSExtension.__hash__ = lambda self: hash(self.extType) ^ \
+        hash(bytes(self.extData))
+
 class RenegotiationExtension(tlslite.extensions.TLSExtension):
     """Secure Renegotiation extension RFC 5746"""
     def __init__(self):
