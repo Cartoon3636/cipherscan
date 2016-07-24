@@ -102,53 +102,37 @@ def verbose_inspector(desc, result):
 def scan_TLS_intolerancies(host, port, hostname):
     configs = {}
 
+    base_configs = [Xmas_tree, Firefox_42, IE_8_Win_XP, IE_11_Win_7,
+                    VeryCompatible]
+    for conf in base_configs:
+        # only no extensions
+        gen = no_extensions(conf())
+        configs[gen.name] = gen
+
+        for version in ((3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 254)):
+            if conf().version != version:
+                # just changed version
+                gen = set_hello_version(conf(), version)
+                if gen.record_version > version:
+                    gen.record_version = version
+                configs[gen.name] = gen
+
+                # changed version and no extensions
+                gen = set_hello_version(conf(), version)
+                if gen.record_version > version:
+                    gen.record_version = version
+                gen = no_extensions(gen)
+                configs[gen.name] = gen
+
     # Xmas tree configs
     gen = Xmas_tree()
-    configs[gen.name] = gen
-
-    gen = set_hello_version(Xmas_tree(), (3, 5))
     configs[gen.name] = gen
 
     gen = no_sni(Xmas_tree())
     configs[gen.name] = gen
 
-    gen = set_record_version(Xmas_tree(), (3, 3))
-    gen = set_hello_version(gen, (3, 3))
-    configs[gen.name] = gen
-
-    gen = set_hello_version(Xmas_tree(), (3, 2))
-    gen = set_record_version(gen, (3, 2))
-    configs[gen.name] = gen
-
-    gen = set_hello_version(Xmas_tree(), (3, 2))
-    gen = set_record_version(gen, (3, 1))
-    configs[gen.name] = gen
-
-    gen = set_hello_version(Xmas_tree(), (3, 1))
-    gen = set_record_version(gen, (3, 1))
-    configs[gen.name] = gen
-
-    gen = set_hello_version(Xmas_tree(), (3, 254))
-    gen = set_record_version(gen, (3, 3))
-    configs[gen.name] = gen
-
-    gen = no_extensions(Xmas_tree())
-    configs[gen.name] = gen
-
-    gen = no_extensions(set_hello_version(Xmas_tree(), (3, 5)))
-    configs[gen.name] = gen
-
     # Firefox 42 configs
     gen = Firefox_42()
-    configs[gen.name] = gen
-
-    gen = no_extensions(Firefox_42())
-    configs[gen.name] = gen
-
-    gen = set_hello_version(Firefox_42(), (3, 2))
-    configs[gen.name] = gen
-
-    gen = set_hello_version(Firefox_42(), (3, 4))
     configs[gen.name] = gen
 
     # Firefox 46 configs
@@ -178,38 +162,14 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = IE_8_Win_XP()
     configs[gen.name] = gen
 
-    gen = set_hello_version(IE_8_Win_XP(), (3, 2))
-    configs[gen.name] = gen
-
-    gen = set_hello_version(IE_8_Win_XP(), (3, 3))
-    configs[gen.name] = gen
-
-    gen = set_hello_version(IE_8_Win_XP(), (3, 4))
-    configs[gen.name] = gen
-
-    gen = set_hello_version(IE_8_Win_XP(), (3, 5))
-    configs[gen.name] = gen
-
     # IE 11 on Win 7 configs
     gen = IE_11_Win_7()
-    configs[gen.name] = gen
-
-    gen = set_hello_version(IE_11_Win_7(), (3, 2))
-    configs[gen.name] = gen
-
-    gen = no_extensions(IE_11_Win_7())
     configs[gen.name] = gen
 
     gen = no_sni(IE_11_Win_7())
     configs[gen.name] = gen
 
     gen = set_hello_version(no_sni(IE_11_Win_7()), (3, 2))
-    configs[gen.name] = gen
-
-    gen = set_hello_version(IE_11_Win_7(), (3, 5))
-    configs[gen.name] = gen
-
-    gen = set_hello_version(IE_11_Win_7(), (3, 254))
     configs[gen.name] = gen
 
     # IE 11 on Win 8.1 configs
@@ -233,9 +193,6 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = VeryCompatible()
     configs[gen.name] = gen
 
-    gen = set_hello_version(VeryCompatible(), (3, 1))
-    configs[gen.name] = gen
-
     gen = append_ciphers_to_size(VeryCompatible(), 2**16)
     configs[gen.name] = gen
 
@@ -243,24 +200,6 @@ def scan_TLS_intolerancies(host, port, hostname):
     configs[gen.name] = gen
 
     gen = extend_with_ext_to_size(VeryCompatible(), 16388)
-    configs[gen.name] = gen
-
-    gen = no_extensions(VeryCompatible())
-    configs[gen.name] = gen
-
-    gen = no_extensions(set_hello_version(VeryCompatible(), (3, 254)))
-    configs[gen.name] = gen
-
-    gen = no_extensions(set_hello_version(VeryCompatible(), (3, 5)))
-    configs[gen.name] = gen
-
-    gen = no_extensions(set_hello_version(VeryCompatible(), (3, 4)))
-    configs[gen.name] = gen
-
-    gen = no_extensions(set_hello_version(VeryCompatible(), (3, 2)))
-    configs[gen.name] = gen
-
-    gen = no_extensions(set_hello_version(VeryCompatible(), (3, 1)))
     configs[gen.name] = gen
 
     results = {}
