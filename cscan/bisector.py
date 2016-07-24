@@ -79,9 +79,6 @@ def bisect_lists(first, second):
 
 def bisect_hellos(first, second):
     """Return a client hello that is in the "middle" of two other"""
-    first_list = first.cipher_suites
-    second_list = second.cipher_suites
-
     ret = copy.deepcopy(first)
 
     ret.client_version = ((first.client_version[0] + second.client_version[0])
