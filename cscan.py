@@ -96,7 +96,7 @@ def truncate_ciphers_to_size(generator, size):
             ret.cipher_suites.pop()
         return ret
     patch_call(generator, ret_fun)
-    generator.modifications += ["trunc {0}".format(size)]
+    generator.modifications += ["trunc c/{0}".format(size)]
     return generator
 
 
@@ -125,7 +125,7 @@ def append_ciphers_to_size(generator, size):
             bytes_to_add -= 2
         return ret
     patch_call(generator, ret_fun)
-    generator.modifications += ["append {0}".format(size)]
+    generator.modifications += ["append c/{0}".format(size)]
     return generator
 
 
@@ -346,18 +346,18 @@ def scan_TLS_intolerancies(host, port, hostname):
                                    if conf.version == (3, 1))
 
     if not simple_inspector(scan_with_config(host, port,
-            configs["Very Compatible (append 65536)"], hostname)) and \
+            configs["Very Compatible (append c/65536)"], hostname)) and \
             simple_inspector(scan_with_config(host, port,
                 configs["Very Compatible"], hostname)):
-        bad = configs["Very Compatible (append 65536)"]
+        bad = configs["Very Compatible (append c/65536)"]
         good = configs["Very Compatible"]
         def test_cb(client_hello):
             ret = scan_with_config(host, port, lambda _:client_hello, hostname)
             return simple_inspector(ret)
         bisect = Bisect(good, bad, hostname, test_cb)
         good, bad = bisect.run()
-        intolerancies["size {0}".format(len(bad.write()))] = True
-        intolerancies["size {0}".format(len(good.write()))] = False
+        intolerancies["size c/{0}".format(len(bad.write()))] = True
+        intolerancies["size c/{0}".format(len(good.write()))] = False
 
     # intolerancies["Xmas tree"] = not simple_inspector(results["Xmas tree"])
     # intolerancies["Huge Cipher List"] = not simple_inspector(
