@@ -335,6 +335,13 @@ for r,d,flist in os.walk(path):
                 for name, val in intoler.items():
                     if val is True:
                         tempintolerancies[name] = 1
+                size_intol = [x.replace('size ', '')
+                              for x in tempintolerancies.keys()
+                              if x.startswith('size ')]
+                if size_intol:
+                    size_intol.sort(reverse=True)
+                    tempintolerancies['size {0}'
+                                      .format(" ".join(size_intol))] = 1
             else:
                 tempintolerancies['x:missing information'] = 1
 
