@@ -119,6 +119,10 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = set_record_version(gen, (3, 2))
     configs[gen.name] = gen
 
+    gen = set_hello_version(Xmas_tree(), (3, 1))
+    gen = set_record_version(gen, (3, 1))
+    configs[gen.name] = gen
+
     gen = set_hello_version(Xmas_tree(), (3, 254))
     gen = set_record_version(gen, (3, 3))
     configs[gen.name] = gen
@@ -142,6 +146,9 @@ def scan_TLS_intolerancies(host, port, hostname):
     configs[gen.name] = gen
 
     gen = set_hello_version(Firefox_46(), (3, 5))
+    configs[gen.name] = gen
+
+    gen = set_hello_version(Firefox_46(), (3, 1))
     configs[gen.name] = gen
 
     gen = IE_6()
@@ -183,6 +190,9 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = IE_11_Win_8_1()
     configs[gen.name] = gen
 
+    gen = set_hello_version(IE_11_Win_8_1(), (3, 1))
+    configs[gen.name] = gen
+
     gen = set_hello_version(IE_11_Win_8_1(), (3, 4))
     configs[gen.name] = gen
 
@@ -193,6 +203,9 @@ def scan_TLS_intolerancies(host, port, hostname):
     configs[gen.name] = gen
 
     gen = VeryCompatible()
+    configs[gen.name] = gen
+
+    gen = set_hello_version(VeryCompatible(), (3, 1))
     configs[gen.name] = gen
 
     gen = append_ciphers_to_size(VeryCompatible(), 2**16)
