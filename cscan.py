@@ -5,7 +5,7 @@ from tlslite.messages import ClientHello, ServerHello, ServerHelloDone, Alert
 from tlslite.constants import ContentType, CipherSuite, HandshakeType, \
         ExtensionType, AlertLevel
 from tlslite.utils.cryptomath import numberToByteArray
-from tlslite.extensions import SNIExtension, TLSExtension
+from tlslite.extensions import SNIExtension, TLSExtension, PaddingExtension
 from cscan.messages import Certificate
 import socket
 import random
@@ -126,6 +126,34 @@ def append_ciphers_to_size(generator, size):
         return ret
     patch_call(generator, ret_fun)
     generator.modifications += ["append c/{0}".format(size)]
+    return generator
+
+
+def extend_with_ext_to_size(generator, size):
+    """
+    Add the padding extension so that the Hello is at least `size` bytes
+
+    Either adds a padding extension or extends an existing one so that
+    the specified size is reached
+    """
+
+    def ret_fun(self, hostname, size=size):
+        ret = super(type(self), self).__call__(hostname)
+        if len(ret.write()) > size:
+            return ret
+        if not ret.extensions:
+            ret.extensions = []
+        ext = next((x for x in ret.extensions
+                    if isinstance(x, PaddingExtension)), None)
+        if not ext:
+            ext = PaddingExtension()
+            ret.extensions.append(ext)
+        bytes_to_add = size - len(ret.write())
+        if bytes_to_add > 0:
+            ext.paddingData += bytearray(bytes_to_add)
+        return ret
+    patch_call(generator, ret_fun)
+    generator.modifications += ["append e/{0}".format(size)]
     return generator
 
 
@@ -303,6 +331,12 @@ def scan_TLS_intolerancies(host, port, hostname):
     configs[gen.name] = gen
 
     gen = append_ciphers_to_size(VeryCompatible(), 2**16)
+    configs[gen.name] = gen
+
+    gen = extend_with_ext_to_size(VeryCompatible(), 2**16)
+    configs[gen.name] = gen
+
+    gen = extend_with_ext_to_size(VeryCompatible(), 16388)
     configs[gen.name] = gen
 
     results = {}
