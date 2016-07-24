@@ -258,6 +258,20 @@ def scan_TLS_intolerancies(host, port, hostname):
         intolerancies["size c/{0}".format(len(bad.write()))] = True
         intolerancies["size c/{0}".format(len(good.write()))] = False
 
+    if not simple_inspector(scan_with_config(host, port,
+            configs["Very Compatible (append e/65536)"], hostname)) and \
+            simple_inspector(scan_with_config(host, port,
+                configs["Very Compatible"], hostname)):
+        bad = configs["Very Compatible (append e/65536)"]
+        good = configs["Very Compatible"]
+        def test_cb(client_hello):
+            ret = scan_with_config(host, port, lambda _:client_hello, hostname)
+            return simple_inspector(ret)
+        bisect = Bisect(good, bad, hostname, test_cb)
+        good, bad = bisect.run()
+        intolerancies["size e/{0}".format(len(bad.write()))] = True
+        intolerancies["size e/{0}".format(len(good.write()))] = False
+
     # intolerancies["Xmas tree"] = not simple_inspector(results["Xmas tree"])
     # intolerancies["Huge Cipher List"] = not simple_inspector(
     #         results["Huge Cipher List"])
