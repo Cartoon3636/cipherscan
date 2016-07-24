@@ -89,13 +89,20 @@ class Scanner(object):
             client_hello = self.hello_gen(None)
 
         # record layer version - TLSv1.x
+        # use the version from configuration, if present, or default to the
+        # RFC recommended (3, 1) for TLS and (3, 0) for SSLv3
         if hasattr(client_hello, 'record_version'):
             sock.version = client_hello.record_version
         elif hasattr(self.hello_gen, 'record_version'):
             sock.version = self.hello_gen.record_version
+        elif client_hello.client_version > (3, 1):  # TLS1.0
+            sock.version = (3, 1)
         else:
             sock.version = client_hello.client_version
 
+        # we don't want to send invalid messages (SSLv2 hello in SSL record
+        # layer), so set the record layer version to SSLv2 if the hello is
+        # of SSLv2 format
         if client_hello.ssl2:
             sock.version = (0, 2)
 
