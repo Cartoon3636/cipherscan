@@ -28,6 +28,7 @@ class HelloConfig(object):
         self.extensions = None
         self.random = None
         self.session_id = bytearray(0)
+        self.compression_methods = [0]
 
     @property
     def name(self):
@@ -68,6 +69,7 @@ class HelloConfig(object):
 
         ch = ClientHello().create(self.version, rand, self.session_id,
                                   self.ciphers, extensions=self.extensions)
+        ch.compression_methods = self.compression_methods
         for cb in self.callbacks:
             ch = cb(ch)
         return ch

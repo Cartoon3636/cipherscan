@@ -43,6 +43,7 @@ class TestFirefox(unittest.TestCase):
                          ExtensionType.status_request)
         self.assertIsInstance(ch.extensions[7],
                               SignatureAlgorithmsExtension)
+        self.assertEqual(ch.compression_methods, [0])
 
     def test_firefox_46(self):
         gen = Firefox_46()
@@ -74,6 +75,7 @@ class TestFirefox(unittest.TestCase):
                          ExtensionType.status_request)
         self.assertIsInstance(ch.extensions[8],
                               SignatureAlgorithmsExtension)
+        self.assertEqual(ch.compression_methods, [0])
 
 class TestXmasTree(unittest.TestCase):
     def test_xmas_tree_tls_1_3(self):
