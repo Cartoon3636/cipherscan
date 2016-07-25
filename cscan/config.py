@@ -89,11 +89,8 @@ class Firefox_42(HelloConfig):
                         CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
                         CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA,
                         CipherSuite.TLS_RSA_WITH_3DES_EDE_CBC_SHA]
-
-    def __call__(self, hostname):
-        ext = []
-        if hostname is not None:
-            ext.append(SNIExtension().create(hostname))
+        ext = self.extensions = []
+        ext.append(SNIExtension())
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
         ext.append(SupportedGroupsExtension().create([GroupName.secp256r1,
@@ -125,13 +122,6 @@ class Firefox_42(HelloConfig):
         ext.append(SignatureAlgorithmsExtension()
                    .create(sig_algs))
 
-        # we're not doing any crypto with it, just need "something"
-        # TODO: place unix time at the begining
-        rand = numberToByteArray(random.getrandbits(256), 32)
-
-        ch = ClientHello().create(self.version, rand, bytearray(0),
-                                  self.ciphers, extensions=ext)
-        return ch
 
 class Firefox_46(HelloConfig):
     """Create ClientHello like Firefox 46"""
@@ -153,10 +143,8 @@ class Firefox_46(HelloConfig):
                         CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA,
                         CipherSuite.TLS_RSA_WITH_3DES_EDE_CBC_SHA]
 
-    def __call__(self, hostname):
-        ext = []
-        if hostname is not None:
-            ext.append(SNIExtension().create(hostname))
+        ext = self.extensions = []
+        ext.append(SNIExtension())
         ext.append(TLSExtension(extType=ExtensionType.extended_master_secret))
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
@@ -187,14 +175,6 @@ class Firefox_46(HelloConfig):
                              SignatureAlgorithm.dsa))
         ext.append(SignatureAlgorithmsExtension()
                    .create(sig_algs))
-
-        # we're not doing any crypto with it, just need "something"
-        # TODO put a unix time in first bytes
-        rand = numberToByteArray(random.getrandbits(256), 32)
-
-        ch = ClientHello().create(self.version, rand, bytearray(0),
-                                  self.ciphers, extensions=ext)
-        return ch
 
 _ec_precomputed = {
         'secp256r1' : [
