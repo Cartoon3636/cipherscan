@@ -29,6 +29,7 @@ class HelloConfig(object):
         self.random = None
         self.session_id = bytearray(0)
         self.compression_methods = [0]
+        self.ssl2 = False
 
     @property
     def name(self):
@@ -68,8 +69,9 @@ class HelloConfig(object):
             # TODO: place unix time at the beginning
             rand = numberToByteArray(random.getrandbits(256), 32)
 
-        ch = ClientHello().create(self.version, rand, self.session_id,
-                                  self.ciphers, extensions=self.extensions)
+        ch = ClientHello(self.ssl2).create(self.version, rand, self.session_id,
+                                           self.ciphers,
+                                           extensions=self.extensions)
         ch.compression_methods = self.compression_methods
         for cb in self.callbacks:
             ch = cb(ch)
@@ -439,13 +441,8 @@ class IE_6(HelloConfig):
                              CipherSuite.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA,
                              CipherSuite.TLS_DHE_DSS_WITH_DES_CBC_SHA,
                              CipherSuite.TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA])
+        self.ssl2=True
 
-    def __call__(self, hostname):
-        del hostname
-        rand = numberToByteArray(random.getrandbits(256), 32)
-
-        return ClientHello(ssl2=True).create(self.version, rand, bytearray(0),
-                                             self.ciphers)
 
 class IE_8_Win_XP(HelloConfig):
     """Create a Internet Explorer 8 on WinXP-like Client Hello message"""
