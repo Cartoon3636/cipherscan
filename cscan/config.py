@@ -57,9 +57,9 @@ class HelloConfig(object):
                 else:
                     # but if we were not provided with a host name, we want
                     # to remove empty extension
-                    if not sni.serverNames:
+                    if sni.serverNames is None:
                         self.extensions = [x for x in self.extensions
-                                           if isinstance(x, SNIExtension)]
+                                           if not isinstance(x, SNIExtension)]
 
         if self.random:
             rand = self.random
