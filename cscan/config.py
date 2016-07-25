@@ -45,20 +45,21 @@ class HelloConfig(object):
     def __call__(self, hostname):
         """Generate a client hello object, use hostname in SNI extension"""
         # SNI is special in that we don't want to send it if it is empty
-        sni = next((x for x in self.extensions
-                    if isinstance(x, SNIExtension)),
-                   None)
-        if sni:
-            if hostname is not None:
-                if sni.serverNames is None:
-                    sni.serverNames = []
-                sni.hostNames = [hostname]
-            else:
-                # but if we were not provided with a host name, we want
-                # to remove empty extension
-                if not sni.serverNames:
-                    self.extensions = [x for x in self.extensions
-                                       if isinstance(x, SNIExtension)]
+        if self.extensions:
+            sni = next((x for x in self.extensions
+                        if isinstance(x, SNIExtension)),
+                       None)
+            if sni:
+                if hostname is not None:
+                    if sni.serverNames is None:
+                        sni.serverNames = []
+                    sni.hostNames = [hostname]
+                else:
+                    # but if we were not provided with a host name, we want
+                    # to remove empty extension
+                    if not sni.serverNames:
+                        self.extensions = [x for x in self.extensions
+                                           if isinstance(x, SNIExtension)]
 
         if self.random:
             rand = self.random
