@@ -21,9 +21,13 @@ class HelloConfig(object):
     def __init__(self):
         self._name = None
         self.modifications = []
+        self.callbacks = []
         self.version = (3, 3)
         self.record_version = (3, 0)
         self.ciphers = []
+        self.extensions = None
+        self.random = None
+        self.session_id = bytearray(0)
 
     @property
     def name(self):
@@ -38,7 +42,35 @@ class HelloConfig(object):
         self._name = value
 
     def __call__(self, hostname):
-        raise NotImplemented()
+        """Generate a client hello object, use hostname in SNI extension"""
+        # SNI is special in that we don't want to send it if it is empty
+        sni = next((x for x in self.extensions
+                    if isinstance(x, SNIExtension)),
+                   None)
+        if sni:
+            if hostname is not None:
+                if sni.serverNames is None:
+                    sni.serverNames = []
+                sni.hostNames = [hostname]
+            else:
+                # but if we were not provided with a host name, we want
+                # to remove empty extension
+                if not sni.serverNames:
+                    self.extensions = [x for x in self.extensions
+                                       if isinstance(x, SNIExtension)]
+
+        if self.random:
+            rand = self.random
+        else:
+            # we're not doing any crypto with it, just need "something"
+            # TODO: place unix time at the beginning
+            rand = numberToByteArray(random.getrandbits(256), 32)
+
+        ch = ClientHello().create(self.version, rand, self.session_id,
+                                  self.ciphers, extensions=self.extensions)
+        for cb in self.callbacks:
+            ch = cb(ch)
+        return ch
 
 class Firefox_42(HelloConfig):
     def __init__(self):
