@@ -194,8 +194,8 @@ class TestBisect(unittest.TestCase):
 
         bad = HugeCipherList()
         good = VeryCompatible()
-        self.assertGreater(len(bad('').write()), 2**14)
-        self.assertLess(len(good('').write()), 2**14)
+        self.assertGreater(len(bad(b'').write()), 2**14)
+        self.assertLess(len(good(b'').write()), 2**14)
 
         bi = Bisect(good, bad, "localhost", test_cb)
 
@@ -214,8 +214,8 @@ class TestBisect(unittest.TestCase):
         good = IE_8_Win_XP()
         bad = VeryCompatible()
 
-        self.assertTrue(test_cb(good('localhost')))
-        self.assertFalse(test_cb(bad('localhost')))
+        self.assertTrue(test_cb(good(b'localhost')))
+        self.assertFalse(test_cb(bad(b'localhost')))
 
         bi = Bisect(good, bad, "localhost", test_cb)
 
