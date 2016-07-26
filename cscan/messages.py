@@ -9,6 +9,39 @@ from tlslite.x509certchain import X509CertChain
 from tlslite.utils.cryptomath import secureHash
 from .constants import HandshakeType, CipherSuite, GroupName
 
+# gotta go fast
+# comparing client hello's using ClientHello.write() is painfully slow
+# monkey patch in faster compare methods
+
+def __CH_eq_fun(self, other):
+    """
+    Checks if the other is equal to the object
+
+    always returns false if other is not a ClientHello object
+    """
+    if not isinstance(other, messages.ClientHello):
+        return False
+
+    return self.ssl2 == other.ssl2 and \
+           self.client_version == other.client_version and \
+           self.random == other.random and \
+           self.session_id == other.session_id and \
+           self.cipher_suites == other.cipher_suites and \
+           self.compression_methods == other.compression_methods and \
+           self.extensions == other.extensions
+
+messages.ClientHello.__eq__ = __CH_eq_fun
+
+def __CH_ne_fun(self, other):
+    """
+    Checks if the other is not equal to the object
+
+    always returns true if other is not a ClientHello object
+    """
+    return not self.__eq__(other)
+
+messages.ClientHello.__ne__ = __CH_ne_fun
+
 def format_bytearray(byte_array, formatstr):
     """Format method for bytearrays"""
     if 'x' in formatstr:

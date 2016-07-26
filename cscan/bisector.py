@@ -161,8 +161,8 @@ class Bisect(object):
         bad_hello = self.bad(self.hostname)
         middle = bisect_hellos(good_hello, bad_hello)
 
-        while good_hello.write() != middle.write() and \
-                middle.write() != bad_hello.write():
+        while good_hello != middle and \
+                middle != bad_hello:
             if self.callback(middle):
                 good_hello = middle
             else:
