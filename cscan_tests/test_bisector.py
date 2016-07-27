@@ -10,7 +10,7 @@ from tlslite.extensions import SignatureAlgorithmsExtension, SNIExtension, \
         SupportedGroupsExtension, ECPointFormatsExtension, TLSExtension
 from cscan.config import HugeCipherList, VeryCompatible, IE_8_Win_XP
 from cscan.bisector import bisect_lists, list_union, Bisect
-from cscan.modifiers import extend_with_ext_to_size
+from cscan.modifiers import extend_with_ext_to_size, append_ciphers_to_size
 
 class TestListUnion(unittest.TestCase):
     def test_identical(self):
@@ -233,6 +233,21 @@ class TestBisect(unittest.TestCase):
             return len(hello.write()) <= 2**14
 
         bad = extend_with_ext_to_size(VeryCompatible(), 2**16)
+        good = VeryCompatible()
+
+        bi = Bisect(good, bad, "localhost", test_cb)
+
+        a, b = bi.run()
+
+        self.assertEqual(len(a.write()), 2**14)
+        self.assertEqual(len(b.write()), 2**14+1)
+
+    def test_run_with_ext_and_ciphers(self):
+        def test_cb(hello):
+            return len(hello.write()) <= 2**14
+
+        bad = extend_with_ext_to_size(VeryCompatible(), 2**15)
+        bad = append_ciphers_to_size(bad, 2**16)
         good = VeryCompatible()
 
         bi = Bisect(good, bad, "localhost", test_cb)
