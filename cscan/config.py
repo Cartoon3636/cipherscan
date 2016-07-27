@@ -21,9 +21,15 @@ class HelloConfig(object):
     def __init__(self):
         self._name = None
         self.modifications = []
+        self.callbacks = []
         self.version = (3, 3)
         self.record_version = (3, 0)
         self.ciphers = []
+        self.extensions = None
+        self.random = None
+        self.session_id = bytearray(0)
+        self.compression_methods = [0]
+        self.ssl2 = False
 
     @property
     def name(self):
@@ -38,7 +44,38 @@ class HelloConfig(object):
         self._name = value
 
     def __call__(self, hostname):
-        raise NotImplemented()
+        """Generate a client hello object, use hostname in SNI extension"""
+        # SNI is special in that we don't want to send it if it is empty
+        if self.extensions:
+            sni = next((x for x in self.extensions
+                        if isinstance(x, SNIExtension)),
+                       None)
+            if sni:
+                if hostname is not None:
+                    if sni.serverNames is None:
+                        sni.serverNames = []
+                    sni.hostNames = [hostname]
+                else:
+                    # but if we were not provided with a host name, we want
+                    # to remove empty extension
+                    if sni.serverNames is None:
+                        self.extensions = [x for x in self.extensions
+                                           if not isinstance(x, SNIExtension)]
+
+        if self.random:
+            rand = self.random
+        else:
+            # we're not doing any crypto with it, just need "something"
+            # TODO: place unix time at the beginning
+            rand = numberToByteArray(random.getrandbits(256), 32)
+
+        ch = ClientHello(self.ssl2).create(self.version, rand, self.session_id,
+                                           self.ciphers,
+                                           extensions=self.extensions)
+        ch.compression_methods = self.compression_methods
+        for cb in self.callbacks:
+            ch = cb(ch)
+        return ch
 
 class Firefox_42(HelloConfig):
     def __init__(self):
@@ -57,11 +94,8 @@ class Firefox_42(HelloConfig):
                         CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
                         CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA,
                         CipherSuite.TLS_RSA_WITH_3DES_EDE_CBC_SHA]
-
-    def __call__(self, hostname):
-        ext = []
-        if hostname is not None:
-            ext.append(SNIExtension().create(hostname))
+        ext = self.extensions = []
+        ext.append(SNIExtension())
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
         ext.append(SupportedGroupsExtension().create([GroupName.secp256r1,
@@ -93,13 +127,6 @@ class Firefox_42(HelloConfig):
         ext.append(SignatureAlgorithmsExtension()
                    .create(sig_algs))
 
-        # we're not doing any crypto with it, just need "something"
-        # TODO: place unix time at the begining
-        rand = numberToByteArray(random.getrandbits(256), 32)
-
-        ch = ClientHello().create(self.version, rand, bytearray(0),
-                                  self.ciphers, extensions=ext)
-        return ch
 
 class Firefox_46(HelloConfig):
     """Create ClientHello like Firefox 46"""
@@ -121,10 +148,8 @@ class Firefox_46(HelloConfig):
                         CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA,
                         CipherSuite.TLS_RSA_WITH_3DES_EDE_CBC_SHA]
 
-    def __call__(self, hostname):
-        ext = []
-        if hostname is not None:
-            ext.append(SNIExtension().create(hostname))
+        ext = self.extensions = []
+        ext.append(SNIExtension())
         ext.append(TLSExtension(extType=ExtensionType.extended_master_secret))
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
@@ -155,14 +180,6 @@ class Firefox_46(HelloConfig):
                              SignatureAlgorithm.dsa))
         ext.append(SignatureAlgorithmsExtension()
                    .create(sig_algs))
-
-        # we're not doing any crypto with it, just need "something"
-        # TODO put a unix time in first bytes
-        rand = numberToByteArray(random.getrandbits(256), 32)
-
-        ch = ClientHello().create(self.version, rand, bytearray(0),
-                                  self.ciphers, extensions=ext)
-        return ch
 
 _ec_precomputed = {
         'secp256r1' : [
@@ -244,10 +261,8 @@ class Xmas_tree(HelloConfig):
         self.ciphers.extend(CipherSuite.dheDssSuites)
         self.ciphers.extend(CipherSuite.certSuites)
 
-    def __call__(self, hostname):
-        ext = []
-        if hostname is not None:
-            ext.append(SNIExtension().create(hostname))
+        ext = self.extensions = []
+        ext.append(SNIExtension())
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
         groups =[GroupName.secp256r1,
@@ -313,13 +328,8 @@ class Xmas_tree(HelloConfig):
         # place an empty extension to trigger intolerancies in specific servers
         ext.append(TLSExtension(extType=ExtensionType.extended_master_secret))
 
-        # we're not doing any crypto with it, just need "something"
-        rand = numberToByteArray(random.getrandbits(256), 32)
-
-        ch = ClientHello().create(self.version, rand, bytearray(0),
-                                  self.ciphers, extensions=ext)
-        ch.compression_methods = list(range(0, 80))  # interesting ones are 0, 1
-        return ch
+        # interesting ones are 0, 1
+        self.compression_methods = list(range(0, 80))
 
 
 class HugeCipherList(HelloConfig):
@@ -337,13 +347,6 @@ class HugeCipherList(HelloConfig):
         self.ciphers.extend(CipherSuite.dheDssSuites)
         self.ciphers.extend(CipherSuite.certSuites)
         self.ciphers.extend(range(0x2000, 0x2000+8192))
-
-    def __call__(self, hostname):
-        del hostname
-        rand = numberToByteArray(random.getrandbits(256), 32)
-        ch = ClientHello().create(self.version, rand, bytearray(0),
-                                  self.ciphers)
-        return ch
 
 
 class VeryCompatible(HelloConfig):
@@ -381,10 +384,8 @@ class VeryCompatible(HelloConfig):
                         CipherSuite.TLS_RSA_WITH_RC4_128_MD5,
                         CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV]
 
-    def __call__(self, hostname):
-        ext = []
-        if hostname is not None:
-            ext.append(SNIExtension().create(hostname))
+        ext = self.extensions = []
+        ext.append(SNIExtension())
         ext.append(SupportedGroupsExtension().create([GroupName.secp256r1,
                                                       GroupName.secp384r1,
                                                       GroupName.secp521r1]))
@@ -413,14 +414,6 @@ class VeryCompatible(HelloConfig):
         ext.append(SignatureAlgorithmsExtension()
                    .create(sig_algs))
 
-        # we're not doing any crypto with it, just need "something"
-        # TODO put a unix time in first bytes
-        rand = numberToByteArray(random.getrandbits(256), 32)
-
-        ch = ClientHello().create(self.version, rand, bytearray(0),
-                                  self.ciphers, extensions=ext)
-        return ch
-
 
 class IE_6(HelloConfig):
     """Create a Internet Explorer 6-like Client Hello message"""
@@ -448,13 +441,8 @@ class IE_6(HelloConfig):
                              CipherSuite.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA,
                              CipherSuite.TLS_DHE_DSS_WITH_DES_CBC_SHA,
                              CipherSuite.TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA])
+        self.ssl2=True
 
-    def __call__(self, hostname):
-        del hostname
-        rand = numberToByteArray(random.getrandbits(256), 32)
-
-        return ClientHello(ssl2=True).create(self.version, rand, bytearray(0),
-                                             self.ciphers)
 
 class IE_8_Win_XP(HelloConfig):
     """Create a Internet Explorer 8 on WinXP-like Client Hello message"""
@@ -477,12 +465,6 @@ class IE_8_Win_XP(HelloConfig):
                              CipherSuite.TLS_DHE_DSS_WITH_DES_CBC_SHA,
                              CipherSuite.TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA])
 
-    def __call__(self, hostname):
-        del hostname
-        rand = numberToByteArray(random.getrandbits(256), 32)
-
-        return ClientHello().create(self.version, rand, bytearray(0),
-                                    self.ciphers)
 
 class IE_11_Win_7(HelloConfig):
     """Create an Internet Explorer 11 on Win7-like Client Hello message"""
@@ -515,10 +497,8 @@ class IE_11_Win_7(HelloConfig):
                              CipherSuite.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA,
                              CipherSuite.TLS_RSA_WITH_RC4_128_MD5])
 
-    def __call__(self, hostname):
-        ext = []
-        if hostname is not None:
-            ext.append(SNIExtension().create(hostname))
+        ext = self.extensions = []
+        ext.append(SNIExtension())
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
         groups = [GroupName.secp256r1,
@@ -536,10 +516,6 @@ class IE_11_Win_7(HelloConfig):
         sig_algs.append((HashAlgorithm.sha1, SignatureAlgorithm.dsa))
         ext.append(SignatureAlgorithmsExtension().create(sig_algs))
 
-        rand = numberToByteArray(random.getrandbits(256), 32)
-
-        return ClientHello().create(self.version, rand, bytearray(0),
-                                    self.ciphers, extensions=ext)
 
 class IE_11_Win_8_1(HelloConfig):
     """Create an Internet Explorer 11 on Win8.1-like Client Hello message"""
@@ -569,10 +545,8 @@ class IE_11_Win_8_1(HelloConfig):
                         CipherSuite.TLS_DHE_DSS_WITH_AES_256_CBC_SHA,
                         CipherSuite.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA]
 
-    def __call__(self, hostname):
-        ext = []
-        if hostname is not None:
-            ext.append(SNIExtension().create(hostname))
+        ext = self.extensions = []
+        ext.append(SNIExtension())
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
         groups = [GroupName.secp256r1,
@@ -595,8 +569,3 @@ class IE_11_Win_8_1(HelloConfig):
                    .create(bytearray(b'\x00\x10' +
                                      b'\x06' + b'spdy/3' +
                                      b'\x08' + b'http/1.1')))
-
-        rand = numberToByteArray(random.getrandbits(256), 32)
-
-        return ClientHello().create(self.version, rand, bytearray(0),
-                                    self.ciphers, extensions=ext)

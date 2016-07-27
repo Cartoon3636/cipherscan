@@ -203,49 +203,57 @@ def scan_TLS_intolerancies(host, port, hostname):
     configs[gen.name] = gen
 
     results = {}
-    for desc, conf in configs.items():
-        results[desc] = scan_with_config(host, port, conf, hostname)
 
-    host_up = any(simple_inspector(res) for res in results.values())
+    def conf_iterator(predicate):
+        """
+        Caching, selecting iterator over configs
 
-    if False:
-        for desc, ret in sorted(results.items()):
-            print(verbose_inspector(desc, ret))
+        Returns an iterator that will go over configs that match the provided
+        predicate (a function that returns true or false depending if given
+        config is ok for test at hand) while saving the results to the
+        cache/verbose `results` log/dictionary
+        """
+        return (not simple_inspector(results[name] if name in results
+                                     else results.setdefault(name,
+                                        scan_with_config(host,
+                                                         port,
+                                                         conf,
+                                                         hostname)))
+                for name, conf in configs.items()
+                if predicate(conf))
+
+    host_up = not all(conf_iterator(lambda conf: True))
 
     intolerancies = {}
     if not host_up:
         print(json.dumps(intolerancies))
         return
 
-    intolerancies["SSL 3.254"] = all(name in results and
-                                     not simple_inspector(results[name])
-                                         for name, conf in configs.items()
-                                         if conf.version == (3, 254))
-    intolerancies["TLS 1.4"] = all(name in results and
-                                   not simple_inspector(results[name])
-                                   for name, conf in configs.items()
-                                   if conf.version == (3, 5))
-    intolerancies["TLS 1.3"] = all(name in results and
-                                   not simple_inspector(results[name])
-                                   for name, conf in configs.items()
-                                   if conf.version == (3, 4))
-    intolerancies["TLS 1.2"] = all(name in results and
-                                   not simple_inspector(results[name])
-                                   for name, conf in configs.items()
-                                   if conf.version == (3, 3))
-    intolerancies["TLS 1.1"] = all(name in results and
-                                   not simple_inspector(results[name])
-                                   for name, conf in configs.items()
-                                   if conf.version == (3, 2))
-    intolerancies["TLS 1.0"] = all(name in results and
-                                   not simple_inspector(results[name])
-                                   for name, conf in configs.items()
-                                   if conf.version == (3, 1))
-    intolerancies["extensions"] = all(name in results and
-                                      not simple_inspector(results[name])
-                                      for name, conf in configs.items()
-                                      if results[name][0].extensions
-                                      and not results[name][0].ssl2)
+
+    intolerancies["SSL 3.254"] = all(conf_iterator(lambda conf:
+                                                   conf.version == (3, 254)))
+    intolerancies["TLS 1.4"] = all(conf_iterator(lambda conf:
+                                                 conf.version == (3, 5)))
+    intolerancies["TLS 1.3"] = all(conf_iterator(lambda conf:
+                                                 conf.version == (3, 4)))
+    intolerancies["TLS 1.2"] = all(conf_iterator(lambda conf:
+                                                 conf.version == (3, 3)))
+    intolerancies["TLS 1.1"] = all(conf_iterator(lambda conf:
+                                                 conf.version == (3, 2)))
+    intolerancies["TLS 1.0"] = all(conf_iterator(lambda conf:
+                                                 conf.version == (3, 1)))
+    intolerancies["extensions"] = all(conf_iterator(lambda conf:
+                                                    conf.extensions and not
+                                                    conf.ssl2))
+
+    #for name in ["Xmas tree", "Huge Cipher List",
+    #             "Huge Cipher List (trunc c/16388)"]:
+    #    intolerancies[name] = all(conf_iterator(lambda conf:
+    #                                            conf.name == name))
+
+    if False:
+        for desc, ret in sorted(results.items()):
+            print(verbose_inspector(desc, ret))
 
     if not simple_inspector(scan_with_config(host, port,
             configs["Very Compatible (append c/65536)"], hostname)) and \
@@ -274,12 +282,6 @@ def scan_TLS_intolerancies(host, port, hostname):
         good, bad = bisect.run()
         intolerancies["size e/{0}".format(len(bad.write()))] = True
         intolerancies["size e/{0}".format(len(good.write()))] = False
-
-    # intolerancies["Xmas tree"] = not simple_inspector(results["Xmas tree"])
-    # intolerancies["Huge Cipher List"] = not simple_inspector(
-    #         results["Huge Cipher List"])
-    # intolerancies["Huge Cipher List (trunc c/16388)"] = not simple_inspector(
-    #         results["Huge Cipher List (trunc c/16388)"])
 
     print(json.dumps(intolerancies))
 
