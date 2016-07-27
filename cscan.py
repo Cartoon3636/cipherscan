@@ -11,6 +11,7 @@ import socket
 import random
 import sys
 import json
+import getopt
 
 from cscan.scanner import Scanner
 from cscan.config import Xmas_tree, IE_6, IE_8_Win_XP, \
@@ -31,6 +32,9 @@ def scan_with_config(host, port, conf, hostname, __sentry=None, __cache={}):
     scanner = Scanner(conf, host, port, hostname)
     ret = scanner.scan()
     __cache[key] = ret
+    if verbose and not json_out:
+        print(".", end='')
+        sys.stdout.flush()
     return ret
 
 
@@ -79,7 +83,7 @@ def verbose_inspector(desc, result):
             name = CipherSuite.ietfNames[sh.cipher_suite] \
                    if sh.cipher_suite in CipherSuite.ietfNames \
                    else hex(sh.cipher_suite)
-            ret += " OK: {0}, {1}".format(sh.server_version,
+            ret += " ok: {0}, {1}".format(sh.server_version,
                                           name)
             return ret
     ret += " FAILURE "
@@ -226,7 +230,10 @@ def scan_TLS_intolerancies(host, port, hostname):
 
     intolerancies = {}
     if not host_up:
-        print(json.dumps(intolerancies))
+        if json_out:
+            print(json.dumps(intolerancies))
+        else:
+            print("Host does not seem to support SSL or TLS protocol")
         return
 
 
@@ -250,10 +257,6 @@ def scan_TLS_intolerancies(host, port, hostname):
     #             "Huge Cipher List (trunc c/16388)"]:
     #    intolerancies[name] = all(conf_iterator(lambda conf:
     #                                            conf.name == name))
-
-    if False:
-        for desc, ret in sorted(results.items()):
-            print(verbose_inspector(desc, ret))
 
     if not simple_inspector(scan_with_config(host, port,
             configs["Very Compatible (append c/65536)"], hostname)) and \
@@ -283,15 +286,65 @@ def scan_TLS_intolerancies(host, port, hostname):
         intolerancies["size e/{0}".format(len(bad.write()))] = True
         intolerancies["size e/{0}".format(len(good.write()))] = False
 
-    print(json.dumps(intolerancies))
+    if json_out:
+        print(json.dumps(intolerancies))
+    else:
+        if verbose:
+            print()
+        print("Host {0}:{1} scan complete".format(host, port))
+        if hostname:
+            print("SNI hostname used: {0}".format(hostname))
+        if verbose:
+            print()
+            print("Individual probe results:")
+            for desc, ret in sorted(results.items()):
+                print(verbose_inspector(desc, ret))
+
+        print()
+        print("Intolerance to:")
+        for intolerance, value in sorted(intolerancies.items()):
+            print(" {0:20}: {1}".format(intolerance,
+                                    "PRESENT" if value else "absent"))
+
+def usage():
+    print("./cscan.py [ARGUMENTS] host[:port] [SNI-HOST-NAME]")
+    print()
+    print("-j, --json    Output in JSON format")
+    print("-v, --verbose Use verbose output")
 
 if __name__ == "__main__":
-    if len(sys.argv) not in (2, 3):
-        raise TypeError("Provide IP[:port] and optionally a hostname")
+    try:
+        opts, args = getopt.getopt(sys.argv[1:],
+                                   "jvh",
+                                   ["json", "verbose", "help"])
+    except getopt.GetoptError as err:
+        print(err)
+        usage()
+        sys.exit(2)
+
+    json_out = False
+    verbose = False
+
+    for opt, arg in opts:
+        if opt in ('-j', '--json'):
+            json_out = True
+        elif opt in ('-v', '--verbose'):
+            verbose = True
+        elif opt in ('-h', '--help'):
+            usage()
+            sys.exit(0)
+        else:
+            raise AssertionError("Unknown option {0}".format(opt))
+
+    if len(args) > 2:
+        print("Too many arguments")
+        usage()
+        sys.exit(2)
+
     hostname = None
-    if len(sys.argv) == 3:
-        hostname = sys.argv[2]
-    hostaddr = sys.argv[1].split(":")
+    if len(args) == 2:
+        hostname = args[1]
+    hostaddr = args[0].split(":")
     if len(hostaddr) > 1:
         host, port = hostaddr
     else:

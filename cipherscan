@@ -1529,7 +1529,7 @@ test_tls_tolerance() {
     fi
 
     # finally run the Python based test to perform more precise scan
-    cscan_tests="$($DIRNAMEPATH/cscan.sh $TARGET $sni_target)"
+    cscan_tests="$($DIRNAMEPATH/cscan.sh -j $TARGET $sni_target)"
 
 }
 
