@@ -78,6 +78,7 @@ class HelloConfig(object):
         return ch
 
 class Firefox_42(HelloConfig):
+    """Create Client Hello like Firefox 42"""
     def __init__(self):
         super(Firefox_42, self).__init__()
         self._name = "Firefox 42"
