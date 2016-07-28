@@ -102,10 +102,9 @@ def verbose_inspector(desc, result):
     ret += "\n".join(errors)
     return ret
 
+configs = {}
 
-def scan_TLS_intolerancies(host, port, hostname):
-    configs = {}
-
+def load_configs():
     base_configs = [Xmas_tree, Firefox_42, IE_8_Win_XP, IE_11_Win_7,
                     VeryCompatible]
     for conf in base_configs:
@@ -206,6 +205,7 @@ def scan_TLS_intolerancies(host, port, hostname):
     gen = extend_with_ext_to_size(VeryCompatible(), 16388)
     configs[gen.name] = gen
 
+def scan_TLS_intolerancies(host, port, hostname):
     results = {}
 
     def conf_iterator(predicate):
@@ -306,17 +306,25 @@ def scan_TLS_intolerancies(host, port, hostname):
             print(" {0:20}: {1}".format(intolerance,
                                     "PRESENT" if value else "absent"))
 
+def single_probe(name):
+    print(verbose_inspector(name, scan_with_config(host, port,
+        configs[name], hostname)))
+
+
 def usage():
     print("./cscan.py [ARGUMENTS] host[:port] [SNI-HOST-NAME]")
     print()
-    print("-j, --json    Output in JSON format")
-    print("-v, --verbose Use verbose output")
+    print("-l, --list           List probe names")
+    print("-p name, --probe     Run just a single probe")
+    print("-j, --json           Output in JSON format")
+    print("-v, --verbose        Use verbose output")
 
 if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:],
-                                   "jvh",
-                                   ["json", "verbose", "help"])
+                                   "jvhlp:",
+                                   ["json", "verbose", "help", "list",
+                                    "probe"])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -324,6 +332,8 @@ if __name__ == "__main__":
 
     json_out = False
     verbose = False
+    list_probes = False
+    run_probe = None
 
     for opt, arg in opts:
         if opt in ('-j', '--json'):
@@ -333,6 +343,10 @@ if __name__ == "__main__":
         elif opt in ('-h', '--help'):
             usage()
             sys.exit(0)
+        elif opt in ('-l', '--list'):
+            list_probes = True
+        elif opt in ('-p', '--probe'):
+            run_probe = arg
         else:
             raise AssertionError("Unknown option {0}".format(opt))
 
@@ -340,6 +354,13 @@ if __name__ == "__main__":
         print("Too many arguments")
         usage()
         sys.exit(2)
+
+    load_configs()
+
+    if list_probes:
+        for desc, ret in sorted(configs.items()):
+            print("{0}: {1}".format(desc, ret.__doc__))
+        sys.exit(0)
 
     hostname = None
     if len(args) == 2:
@@ -350,4 +371,8 @@ if __name__ == "__main__":
     else:
         host = hostaddr[0]
         port = 443
-    scan_TLS_intolerancies(host, port, hostname)
+
+    if run_probe:
+        single_probe(run_probe)
+    else:
+        scan_TLS_intolerancies(host, port, hostname)
