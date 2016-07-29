@@ -122,7 +122,7 @@ def bisect_extensions(first, second):
 
 def bisect_hellos(first, second):
     """Return a client hello that is in the "middle" of two other"""
-    ret = copy.deepcopy(first)
+    ret = copy.copy(first)
 
     ret.client_version = ((first.client_version[0] + second.client_version[0])
                           // 2,
