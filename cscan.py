@@ -13,6 +13,7 @@ import sys
 import json
 import getopt
 import itertools
+import copy
 
 from cscan.scanner import Scanner
 from cscan.config import Xmas_tree, IE_6, IE_8_Win_XP, \
@@ -287,33 +288,76 @@ def scan_TLS_intolerancies(host, port, hostname):
     #    intolerancies[name] = all(conf_iterator(lambda conf:
     #                                            conf.name == name))
 
-    if not simple_inspector(scan_with_config(host, port,
-            configs["Very Compatible (append c/65536)"], hostname)) and \
-            simple_inspector(scan_with_config(host, port,
-                configs["Very Compatible"], hostname)):
-        bad = configs["Very Compatible (append c/65536)"]
-        good = configs["Very Compatible"]
-        def test_cb(client_hello):
-            ret = scan_with_config(host, port, lambda _:client_hello, hostname)
-            return simple_inspector(ret)
-        bisect = Bisect(good, bad, hostname, test_cb)
-        good, bad = bisect.run()
-        intolerancies["size c/{0}".format(len(bad.write()))] = True
-        intolerancies["size c/{0}".format(len(good.write()))] = False
+    def test_cb(client_hello):
+        ret = scan_with_config(host, port, lambda _:client_hello, hostname)
+        return simple_inspector(ret)
 
-    if not simple_inspector(scan_with_config(host, port,
-            configs["Very Compatible (append e/65536)"], hostname)) and \
-            simple_inspector(scan_with_config(host, port,
-                configs["Very Compatible"], hostname)):
-        bad = configs["Very Compatible (append e/65536)"]
-        good = configs["Very Compatible"]
-        def test_cb(client_hello):
-            ret = scan_with_config(host, port, lambda _:client_hello, hostname)
-            return simple_inspector(ret)
-        bisect = Bisect(good, bad, hostname, test_cb)
-        good, bad = bisect.run()
-        intolerancies["size e/{0}".format(len(bad.write()))] = True
-        intolerancies["size e/{0}".format(len(good.write()))] = False
+    # most size intolerancies lie between 16385 and 16389 so short-circuit to
+    # them if possible
+    good_conf = next((configs[name] for name, result in results.items()
+                      if simple_inspector(result)), None)
+
+    if good_conf:
+        size_c_16382 = simple_inspector(scan_with_config(host, port,
+            append_ciphers_to_size(copy.deepcopy(good_conf), 16382), hostname))
+        size_c_16392 = simple_inspector(scan_with_config(host, port,
+            append_ciphers_to_size(copy.deepcopy(good_conf), 16392), hostname))
+
+        if size_c_16382 and not size_c_16392:
+            good = append_ciphers_to_size(copy.deepcopy(good_conf), 16382)
+            bad = append_ciphers_to_size(copy.deepcopy(good_conf), 16392)
+        elif not size_c_16382:
+            good = good_conf
+            bad = append_ciphers_to_size(copy.deepcopy(good_conf), 16382)
+        else:
+            bad = append_ciphers_to_size(copy.deepcopy(good_conf), 65536)
+            size_c_65536 = simple_inspector(scan_with_config(host, port,
+                bad, hostname))
+            if not size_c_65536:
+                good = None
+                intolerancies["size c/65536"] = False
+            else:
+                good = append_ciphers_to_size(copy.deepcopy(good_conf), 16392)
+
+        if good:
+            bisect = Bisect(good, bad, hostname, test_cb)
+            good_h, bad_h = bisect.run()
+            intolerancies["size c/{0}".format(len(bad_h.write()))] = True
+            intolerancies["size c/{0}".format(len(good_h.write()))] = False
+
+    # test extension size intolerance, again, most lie between 16385
+    # and 16389 so short-circuit if possible
+    good_conf = next((configs[name] for name, result in results.items()
+                      if configs[name].extensions and
+                      simple_inspector(result)), None)
+
+    if good_conf:
+        size_e_16382 = simple_inspector(scan_with_config(host, port,
+            extend_with_ext_to_size(copy.deepcopy(good_conf), 16382), hostname))
+        size_e_16392 = simple_inspector(scan_with_config(host, port,
+            extend_with_ext_to_size(copy.deepcopy(good_conf), 16392), hostname))
+
+        if size_e_16382 and not size_e_16392:
+            good = extend_with_ext_to_size(copy.deepcopy(good_conf), 16382)
+            bad = extend_with_ext_to_size(copy.deepcopy(good_conf), 16392)
+        elif not size_e_16382:
+            good = good_conf
+            bad = extend_with_ext_to_size(copy.deepcopy(good_conf), 16382)
+        else:
+            bad = extend_with_ext_to_size(copy.deepcopy(good_conf), 65536)
+            size_e_65536 = simple_inspector(scan_with_config(host, port,
+                bad, hostname))
+            if not size_c_65536:
+                good = None
+                intolerancies["size e/65536"] = False
+            else:
+                good = extend_with_ext_to_size(copy.deepcopy(good_conf), 16392)
+
+        if good:
+            bisect = Bisect(good, bad, hostname, test_cb)
+            good_h, bad_h = bisect.run()
+            intolerancies["size e/{0}".format(len(bad_h.write()))] = True
+            intolerancies["size e/{0}".format(len(good_h.write()))] = False
 
     if json_out:
         print(json.dumps(intolerancies))
