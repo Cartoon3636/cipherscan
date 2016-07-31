@@ -12,6 +12,7 @@ import random
 import sys
 import json
 import getopt
+import itertools
 
 from cscan.scanner import Scanner
 from cscan.config import Xmas_tree, IE_6, IE_8_Win_XP, \
@@ -225,6 +226,21 @@ def load_configs():
 def scan_TLS_intolerancies(host, port, hostname):
     results = {}
 
+    def result_iterator(predicate):
+        """
+        Selecting iterator over cached results
+
+        Looks for matching result from already performed scans
+        """
+        return (not simple_inspector(results[name]) for name in results
+            if predicate(configs[name]))
+
+    def result_cache(name, conf):
+        """Performs scan if config is not in results, caches result"""
+        return results[name] if name in results \
+            else results.setdefault(name, scan_with_config(host, port, conf,
+                                                           hostname))
+
     def conf_iterator(predicate):
         """
         Caching, selecting iterator over configs
@@ -234,14 +250,10 @@ def scan_TLS_intolerancies(host, port, hostname):
         config is ok for test at hand) while saving the results to the
         cache/verbose `results` log/dictionary
         """
-        return (not simple_inspector(results[name] if name in results
-                                     else results.setdefault(name,
-                                        scan_with_config(host,
-                                                         port,
-                                                         conf,
-                                                         hostname)))
-                for name, conf in configs.items()
-                if predicate(conf))
+        scan_iter = (not simple_inspector(result_cache(name, conf))
+                     for name, conf in configs.items()
+                     if predicate(conf))
+        return itertools.chain(result_iterator(predicate), scan_iter)
 
     host_up = not all(conf_iterator(lambda conf: True))
 
