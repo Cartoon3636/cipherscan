@@ -112,6 +112,9 @@ def load_configs():
         gen = no_extensions(conf())
         configs[gen.name] = gen
 
+        gen = no_sni(conf())
+        configs[gen.name] = gen
+
         for version in ((3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 254)):
             if conf().version != version:
                 # just changed version
@@ -125,6 +128,13 @@ def load_configs():
                 if gen.record_version > version:
                     gen.record_version = version
                 gen = no_extensions(gen)
+                configs[gen.name] = gen
+
+                # changed version and no sni
+                gen = set_hello_version(conf(), version)
+                if gen.record_version > version:
+                    gen.record_version = version
+                gen = no_sni(gen)
                 configs[gen.name] = gen
 
     # Xmas tree configs
