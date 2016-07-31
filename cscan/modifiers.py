@@ -1,6 +1,6 @@
 from __future__ import print_function
 from tlslite.constants import CipherSuite
-from tlslite.extensions import SNIExtension, PaddingExtension
+from tlslite.extensions import SNIExtension, PaddingExtension, TLSExtension
 import itertools
 
 def patch_call(instance, func):
@@ -11,6 +11,8 @@ def patch_call(instance, func):
 
 
 def no_sni(generator):
+    if not generator.extensions:
+        return generator
     generator.extensions[:] = (x for x in generator.extensions
                                if not isinstance(x, SNIExtension))
     generator.modifications.append("no SNI")
@@ -136,4 +138,12 @@ def extend_with_ext_to_size(generator, size):
         return client_hello
     generator.callbacks.append(cb_fun)
     generator.modifications += ["append e/{0}".format(size)]
+    return generator
+
+def add_empty_ext(generator, ext_type):
+    if generator.extensions is None:
+        generator.extensions = []
+    generator.extensions += [TLSExtension(extType=ext_type)
+                             .create(bytearray(0))]
+    generator.modifications += ["add ext {0}".format(ext_type)]
     return generator
