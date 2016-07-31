@@ -20,7 +20,7 @@ from cscan.config import Xmas_tree, IE_6, IE_8_Win_XP, \
 from cscan.bisector import Bisect
 from cscan.modifiers import no_sni, set_hello_version, set_record_version, \
         no_extensions, truncate_ciphers_to_size, append_ciphers_to_size, \
-        extend_with_ext_to_size
+        extend_with_ext_to_size, add_empty_ext
 
 
 def scan_with_config(host, port, conf, hostname, __sentry=None, __cache={}):
@@ -174,6 +174,13 @@ def load_configs():
     # IE 8 configs
     gen = IE_8_Win_XP()
     configs[gen.name] = gen
+
+    gen = extend_with_ext_to_size(IE_8_Win_XP(), 200)
+    configs[gen.name] = gen
+
+    for ext_id in (0, 1, 2, 3, 4, 5):
+        gen = add_empty_ext(IE_8_Win_XP(), ext_id)
+        configs[gen.name] = gen
 
     # IE 11 on Win 7 configs
     gen = IE_11_Win_7()
