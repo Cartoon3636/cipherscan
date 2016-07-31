@@ -11,6 +11,8 @@ def patch_call(instance, func):
 
 
 def no_sni(generator):
+    if not generator.extensions:
+        return generator
     generator.extensions[:] = (x for x in generator.extensions
                                if not isinstance(x, SNIExtension))
     generator.modifications.append("no SNI")
