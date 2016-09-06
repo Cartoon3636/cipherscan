@@ -4,7 +4,7 @@
 """Find an itolerance through bisecting Client Hello"""
 
 import copy
-from tlslite.extensions import PaddingExtension
+from tlslite.extensions import PaddingExtension, TLSExtension
 
 def list_union(first, second):
     """Return an union between two lists, preserving order"""
@@ -93,6 +93,21 @@ def bisect_padding_extension(first, second):
     return PaddingExtension().create((len(first.paddingData) +
                                       len(second.paddingData)) // 2)
 
+def bisect_ext_84(first, second):
+    if first is None and second is None:
+        return None
+    if first is not None and second is None:
+        first, second = second, first
+    if first is None and second is not None:
+        if len(second.extData) == 0:
+            return None
+        elif len(second.extData) == 1:
+            return TLSExtension(extType=84)
+        else:
+            first = TLSExtension(extType=84)
+    return TLSExtension(extType=84).create(bytearray((len(first.extData) +
+                                           len(second.extData)) // 2))
+
 
 def bisect_extensions(first, second):
     # handle padding extension
@@ -109,15 +124,28 @@ def bisect_extensions(first, second):
     f_ext = next((x for x in first if isinstance(x, PaddingExtension)), None)
     s_ext = next((x for x in second if isinstance(x, PaddingExtension)), None)
 
-    ext = bisect_padding_extension(f_ext, s_ext)
+    if s_ext is not None:
+        ext = bisect_padding_extension(f_ext, s_ext)
+        if ext is None:
+            # remove the extension
+            return [x for x in first if not isinstance(x, PaddingExtension)]
+        else:
+            if f_ext is None:
+                return first + [ext]
+            # replace extension
+            return [ext if isinstance(x, PaddingExtension) else x for x in first]
+    f_ext = next((x for x in first if x.extType == 84), None)
+    s_ext = next((x for x in second if x.extType == 84), None)
+
+    ext = bisect_ext_84(f_ext, s_ext)
     if ext is None:
-        # remove the extension
-        return [x for x in first if not isinstance(x, PaddingExtension)]
+        # remove it
+        return [x for x in first if not x.extType == 84]
     else:
         if f_ext is None:
             return first + [ext]
-        # replace extension
-        return [ext if isinstance(x, PaddingExtension) else x for x in first]
+        # replace it
+        return [ext if x.extType == 84 else x for x in first]
 
 
 def bisect_hellos(first, second):
