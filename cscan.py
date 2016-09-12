@@ -320,11 +320,12 @@ def scan_TLS_intolerancies(host, port, hostname):
             bad = append_ciphers_to_size(copy.deepcopy(good_conf), 16382)
         else:
             bad = append_ciphers_to_size(copy.deepcopy(good_conf), 65536)
-            size_c_65536 = simple_inspector(scan_with_config(host, port,
-                bad, hostname))
-            if not size_c_65536:
+            bad_scan = scan_with_config(host, port, bad, hostname)
+            size_c_65536 = simple_inspector(bad_scan)
+            if size_c_65536:
                 good = None
                 intolerancies["size c/65536"] = False
+                intolerancies["size c#/{0}".format(len(bad_scan[0].cipher_suites))] = False
             else:
                 good = append_ciphers_to_size(copy.deepcopy(good_conf), 16392)
 
@@ -362,7 +363,7 @@ def scan_TLS_intolerancies(host, port, hostname):
                 bad = extend_with_ext_to_size(copy.deepcopy(good_conf), 65536)
                 size_e_65536 = simple_inspector(scan_with_config(host, port,
                     bad, hostname))
-                if not size_e_65536:
+                if size_e_65536:
                     good = None
                     intolerancies["size e/65536"] = False
                 else:
