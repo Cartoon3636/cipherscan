@@ -3,7 +3,7 @@
 """Methods for modifying the scan configurations on the fly."""
 
 from __future__ import print_function
-from tlslite.constants import CipherSuite
+from tlslite.constants import CipherSuite, ExtensionType
 from tlslite.extensions import SNIExtension, PaddingExtension, TLSExtension
 import itertools
 
@@ -110,7 +110,8 @@ def append_ciphers_to_size(generator, size):
     return generator
 
 
-def extend_with_ext_to_size(generator, size):
+def extend_with_ext_to_size(generator, size,
+                            ext_type=ExtensionType.client_hello_padding):
     """
     Add the padding extension so that the Hello is at least `size` bytes
 
@@ -124,16 +125,27 @@ def extend_with_ext_to_size(generator, size):
         if not client_hello.extensions:
             client_hello.extensions = []
         ext = next((x for x in client_hello.extensions
-                    if isinstance(x, PaddingExtension)), None)
-        if not ext:
-            ext = PaddingExtension()
-            client_hello.extensions.append(ext)
-        # check if just adding the extension, with no payload, haven't pushed
-        # us over the limit
-        bytes_to_add = size - len(client_hello.write())
-        if bytes_to_add > 0:
-            ext.paddingData += bytearray(bytes_to_add)
-        return client_hello
+                    if x.extType == ext_type), None)
+        if ext_type == ExtensionType.client_hello_padding:
+            if not ext:
+                ext = PaddingExtension()
+                client_hello.extensions.append(ext)
+            # check if just adding the extension, with no payload, haven't pushed
+            # us over the limit
+            bytes_to_add = size - len(client_hello.write())
+            if bytes_to_add > 0:
+                ext.paddingData += bytearray(bytes_to_add)
+            return client_hello
+        else:
+            if not ext:
+                ext = TLSExtension(extType=ext_type)
+                client_hello.extensions.append(ext)
+            # check if just adding the extension, with no payload, haven't pushed
+            # us over the limit
+            bytes_to_add = size - len(client_hello.write())
+            if bytes_to_add > 0:
+                ext.create(bytearray(len(ext.extData) + bytes_to_add))
+            return client_hello
     generator.callbacks.append(cb_fun)
     generator.modifications += ["append e/{0}".format(size)]
     return generator
