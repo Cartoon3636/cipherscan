@@ -380,7 +380,7 @@ def scan_TLS_intolerancies(host, port, hostname):
                                           84)
             size_e_65536 = simple_inspector(scan_with_config(host, port,
                 bad, hostname))
-            if not size_e_65536:
+            if size_e_65536:
                 good = None
                 intolerancies["size #84 e/65536"] = False
             else:
