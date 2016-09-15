@@ -213,24 +213,8 @@ def load_configs():
     gen = set_hello_version(IE_11_Win_8_1(), (3, 4))
     configs[gen.name] = gen
 
-    # Huge Cipher List
-    gen = HugeCipherList()
-    configs[gen.name] = gen
-
-    gen = truncate_ciphers_to_size(HugeCipherList(), 16388)
-    configs[gen.name] = gen
-
     # Very Compatible
     gen = VeryCompatible()
-    configs[gen.name] = gen
-
-    gen = append_ciphers_to_size(VeryCompatible(), 2**16)
-    configs[gen.name] = gen
-
-    gen = extend_with_ext_to_size(VeryCompatible(), 2**16)
-    configs[gen.name] = gen
-
-    gen = extend_with_ext_to_size(VeryCompatible(), 16388)
     configs[gen.name] = gen
 
 def scan_TLS_intolerancies(host, port, hostname):
@@ -292,10 +276,9 @@ def scan_TLS_intolerancies(host, port, hostname):
                                                     conf.extensions and not
                                                     conf.ssl2))
 
-    #for name in ["Xmas tree", "Huge Cipher List",
-    #             "Huge Cipher List (trunc c/16388)"]:
-    #    intolerancies[name] = all(conf_iterator(lambda conf:
-    #                                            conf.name == name))
+    #for name in ["Xmas tree", "Very Compatible"]:
+    #    intolerancies["x:" + name] = all(conf_iterator(lambda conf:
+    #                                                   conf.name == name))
 
     def test_cb(client_hello):
         ret = scan_with_config(host, port, lambda _:client_hello, hostname)
@@ -339,7 +322,7 @@ def scan_TLS_intolerancies(host, port, hostname):
 
     # test extension size intolerance, again, most lie between 16385
     # and 16389 so short-circuit if possible
-    if not ('size cn/129' in intolerancies and
+    if not ('size c#/129' in intolerancies and
             intolerancies["size c#/129"] and \
             intolerancies["TLS 1.3"] and not intolerancies["TLS 1.2"] and \
             not intolerancies["extensions"]):

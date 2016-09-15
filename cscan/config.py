@@ -341,23 +341,6 @@ class Xmas_tree(HelloConfig):
         self.compression_methods = list(range(0, 80))
 
 
-class HugeCipherList(HelloConfig):
-    """Client Hello with list of ciphers that doesn't fit a single record"""
-
-    def __init__(self):
-        super(HugeCipherList, self).__init__()
-        self._name = "Huge Cipher List"
-        self.record_version = (3, 1)
-        self.version = (3, 3)
-        self.ciphers = []
-        self.ciphers.extend(CipherSuite.ecdheEcdsaSuites)
-        self.ciphers.extend(CipherSuite.ecdheCertSuites)
-        self.ciphers.extend(CipherSuite.dheCertSuites)
-        self.ciphers.extend(CipherSuite.dheDssSuites)
-        self.ciphers.extend(CipherSuite.certSuites)
-        self.ciphers.extend(range(0x2000, 0x2000+8192))
-
-
 class VeryCompatible(HelloConfig):
     """
     Cipher compatible client hello with minimal intolerancies
