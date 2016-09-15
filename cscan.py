@@ -15,7 +15,7 @@ import copy
 
 from cscan.scanner import Scanner
 from cscan.config import Xmas_tree, IE_6, IE_8_Win_XP, \
-        IE_11_Win_7, IE_11_Win_8_1, Firefox_46, Firefox_42, HugeCipherList, \
+        IE_11_Win_7, IE_11_Win_8_1, Firefox_46, Firefox_42, \
         VeryCompatible
 from cscan.modifiers import no_sni, set_hello_version, set_record_version, \
         no_extensions, truncate_ciphers_to_size, append_ciphers_to_size, \
