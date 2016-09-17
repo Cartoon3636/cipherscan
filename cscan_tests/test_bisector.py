@@ -8,7 +8,7 @@ except ImportError:
 
 from tlslite.extensions import SignatureAlgorithmsExtension, SNIExtension, \
         SupportedGroupsExtension, ECPointFormatsExtension, TLSExtension
-from cscan.config import HugeCipherList, VeryCompatible, IE_8_Win_XP
+from cscan.config import VeryCompatible, IE_8_Win_XP, Xmas_tree
 from cscan.bisector import bisect_lists, list_union, Bisect
 from cscan.modifiers import extend_with_ext_to_size, append_ciphers_to_size
 
@@ -192,7 +192,7 @@ class TestBisect(unittest.TestCase):
         def test_cb(hello):
             return len(hello.write()) <= 2**14
 
-        bad = HugeCipherList()
+        bad = append_ciphers_to_size(Xmas_tree(), 2**15)
         good = VeryCompatible()
         self.assertGreater(len(bad(b'').write()), 2**14)
         self.assertLess(len(good(b'').write()), 2**14)
