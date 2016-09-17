@@ -126,7 +126,8 @@ def load_configs():
         gen = no_sni(conf())
         configs[gen.name] = gen
 
-        for version in ((3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 254)):
+        for version in ((3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 254),
+                        (4, 0), (4, 3), (255, 255)):
             if conf().version != version:
                 # just changed version
                 gen = set_hello_version(conf(), version)
@@ -260,6 +261,12 @@ def scan_TLS_intolerancies(host, port, hostname):
             print("Host does not seem to support SSL or TLS protocol")
         return
 
+    intolerancies["SSL 255.255"] = all(conf_iterator(lambda conf:
+                                                     conf.version == (255, 255)))
+    intolerancies["SSL 4.3"] = all(conf_iterator(lambda conf:
+                                                 conf.version == (4, 3)))
+    intolerancies["SSL 4.0"] = all(conf_iterator(lambda conf:
+                                                 conf.version == (4, 0)))
     intolerancies["SSL 3.254"] = all(conf_iterator(lambda conf:
                                                    conf.version == (3, 254)))
     intolerancies["TLS 1.4"] = all(conf_iterator(lambda conf:
@@ -370,6 +377,7 @@ def scan_TLS_intolerancies(host, port, hostname):
                 intolerancies["size e/{0}".format(len(good_h.write()))] = False
 
         if good_conf:
+            # double check the result of the scan with padding extension
             size_e_16382 = simple_inspector(scan_with_config(host, port,
                 extend_with_ext_to_size(copy.deepcopy(good_conf), 16382,
                                         84), hostname))
