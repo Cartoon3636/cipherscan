@@ -369,40 +369,40 @@ def scan_TLS_intolerancies(host, port, hostname):
                 intolerancies["size e/{0}".format(len(bad_h.write()))] = True
                 intolerancies["size e/{0}".format(len(good_h.write()))] = False
 
-    if good_conf:
-        size_e_16382 = simple_inspector(scan_with_config(host, port,
-            extend_with_ext_to_size(copy.deepcopy(good_conf), 16382,
-                                    84), hostname))
-        size_e_16392 = simple_inspector(scan_with_config(host, port,
-            extend_with_ext_to_size(copy.deepcopy(good_conf), 16392,
-                                    84), hostname))
+        if good_conf:
+            size_e_16382 = simple_inspector(scan_with_config(host, port,
+                extend_with_ext_to_size(copy.deepcopy(good_conf), 16382,
+                                        84), hostname))
+            size_e_16392 = simple_inspector(scan_with_config(host, port,
+                extend_with_ext_to_size(copy.deepcopy(good_conf), 16392,
+                                        84), hostname))
 
-        if size_e_16382 and not size_e_16392:
-            good = extend_with_ext_to_size(copy.deepcopy(good_conf), 16382,
-                                           84)
-            bad = extend_with_ext_to_size(copy.deepcopy(good_conf), 16392,
-                                          84)
-        elif not size_e_16382:
-            good = good_conf
-            bad = extend_with_ext_to_size(copy.deepcopy(good_conf), 16382,
-                                          84)
-        else:
-            bad = extend_with_ext_to_size(copy.deepcopy(good_conf), 65536,
-                                          84)
-            size_e_65536 = simple_inspector(scan_with_config(host, port,
-                bad, hostname))
-            if size_e_65536:
-                good = None
-                intolerancies["size #84 e/65536"] = False
-            else:
-                good = extend_with_ext_to_size(copy.deepcopy(good_conf), 16392,
+            if size_e_16382 and not size_e_16392:
+                good = extend_with_ext_to_size(copy.deepcopy(good_conf), 16382,
                                                84)
+                bad = extend_with_ext_to_size(copy.deepcopy(good_conf), 16392,
+                                              84)
+            elif not size_e_16382:
+                good = good_conf
+                bad = extend_with_ext_to_size(copy.deepcopy(good_conf), 16382,
+                                              84)
+            else:
+                bad = extend_with_ext_to_size(copy.deepcopy(good_conf), 65536,
+                                              84)
+                size_e_65536 = simple_inspector(scan_with_config(host, port,
+                    bad, hostname))
+                if size_e_65536:
+                    good = None
+                    intolerancies["size #84 e/65536"] = False
+                else:
+                    good = extend_with_ext_to_size(copy.deepcopy(good_conf), 16392,
+                                                   84)
 
-        if good:
-            bisect = Bisect(good, bad, hostname, test_cb)
-            good_h, bad_h = bisect.run()
-            intolerancies["size #84 e/{0}".format(len(bad_h.write()))] = True
-            intolerancies["size #84 e/{0}".format(len(good_h.write()))] = False
+            if good:
+                bisect = Bisect(good, bad, hostname, test_cb)
+                good_h, bad_h = bisect.run()
+                intolerancies["size #84 e/{0}".format(len(bad_h.write()))] = True
+                intolerancies["size #84 e/{0}".format(len(good_h.write()))] = False
 
     if json_out:
         print(json.dumps(intolerancies))
