@@ -5,6 +5,7 @@
 
 import copy
 from tlslite.extensions import PaddingExtension, TLSExtension
+from tlslite.constants import ExtensionType
 
 def list_union(first, second):
     """Return an union between two lists, preserving order"""
@@ -79,19 +80,21 @@ def bisect_lists(first, second):
 
 
 def bisect_padding_extension(first, second):
+    # skip if undefined
     if first is None and second is None:
         return None
+    # if one undefined, make it the first one
     if first is not None and second is None:
         first, second = second, first
+    # if first undefined and second has data, make the simplest change
     if first is None and second is not None:
         if len(second.paddingData) == 0:
             return None
-        elif len(second.paddingData) == 1:
-            return PaddingExtension()
-        else:
-            first = PaddingExtension()
+        return PaddingExtension()
+    # if both have data, bisect the data
     return PaddingExtension().create((len(first.paddingData) +
                                       len(second.paddingData)) // 2)
+
 
 def bisect_ext_84(first, second):
     if first is None and second is None:
@@ -101,12 +104,26 @@ def bisect_ext_84(first, second):
     if first is None and second is not None:
         if len(second.extData) == 0:
             return None
-        elif len(second.extData) == 1:
-            return TLSExtension(extType=84)
-        else:
-            first = TLSExtension(extType=84)
+        return TLSExtension(extType=84)
     return TLSExtension(extType=84).create(bytearray((len(first.extData) +
                                            len(second.extData)) // 2))
+
+
+def replace_ext(ext_list, ext, ext_id):
+    """Find, replace or remove extension of ext_id in ext_list"""
+    # if the extension to replace is missing, remove it from list
+    if ext is None:
+        ext_list[:] = [i for i in ext_list if i.extType != ext_id]
+        return ext_list
+    # if extension type is already present in list, replace it
+    for pos, val in enumerate(ext_list):
+        if val.extType == ext_id:
+            ext_list[pos] = ext
+            break
+    else:
+    # if not, add it to list
+        ext_list.append(ext)
+    return ext_list
 
 
 def bisect_extensions(first, second):
@@ -126,26 +143,17 @@ def bisect_extensions(first, second):
 
     if s_ext is not None:
         ext = bisect_padding_extension(f_ext, s_ext)
-        if ext is None:
-            # remove the extension
-            return [x for x in first if not isinstance(x, PaddingExtension)]
-        else:
-            if f_ext is None:
-                return first + [ext]
-            # replace extension
-            return [ext if isinstance(x, PaddingExtension) else x for x in first]
+        if ext != f_ext:
+            # we need to return as soon as the first tweakable extension is
+            # found as the bisect_lists will duplicate the first extension
+            # when there are extensions that are different
+            return replace_ext(first[:], ext, ExtensionType.client_hello_padding)
+
     f_ext = next((x for x in first if x.extType == 84), None)
     s_ext = next((x for x in second if x.extType == 84), None)
 
     ext = bisect_ext_84(f_ext, s_ext)
-    if ext is None:
-        # remove it
-        return [x for x in first if not x.extType == 84]
-    else:
-        if f_ext is None:
-            return first + [ext]
-        # replace it
-        return [ext if x.extType == 84 else x for x in first]
+    return replace_ext(first[:], ext, 84)
 
 
 def bisect_hellos(first, second):
@@ -157,13 +165,24 @@ def bisect_hellos(first, second):
                           (first.client_version[1] + second.client_version[1])
                           // 2)
     ret.cipher_suites = bisect_lists(first.cipher_suites, second.cipher_suites)
+    # todo: make it more intelligent, it doesn't handle the case of
+    # two extension types each with different payloads for first and second
     ret.extensions = bisect_lists(first.extensions, second.extensions)
     ret.compression_methods = bisect_lists(first.compression_methods,
                                            second.compression_methods)
-    if first.extensions == ret.extensions \
-            or second.extensions == ret.extensions:
+    f_ext_ids = [i.extType for i in first.extensions] \
+            if first.extensions else []
+    s_ext_ids = [i.extType for i in second.extensions] \
+            if second.extensions else []
+    r_ext_ids = [i.extType for i in ret.extensions] \
+            if ret.extensions else []
+    if f_ext_ids == r_ext_ids or s_ext_ids == r_ext_ids:
         ret.extensions = bisect_extensions(first.extensions,
                                            second.extensions)
+    # todo: if there are just single step changes (like version from (3, 1) to
+    # (3, 2) and presence and absence of single extension, pick one of those
+    # changes as pick the one from the *second* list
+    # (as currently always the value from first is selected)
     return ret
 
 class Bisect(object):

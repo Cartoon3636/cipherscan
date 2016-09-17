@@ -6,10 +6,12 @@ try:
 except ImportError:
     import unittest
 
+import copy
+
 from tlslite.extensions import SignatureAlgorithmsExtension, SNIExtension, \
         SupportedGroupsExtension, ECPointFormatsExtension, TLSExtension
 from cscan.config import VeryCompatible, IE_8_Win_XP, Xmas_tree
-from cscan.bisector import bisect_lists, list_union, Bisect
+from cscan.bisector import bisect_lists, list_union, Bisect, replace_ext
 from cscan.modifiers import extend_with_ext_to_size, append_ciphers_to_size
 
 class TestListUnion(unittest.TestCase):
@@ -183,6 +185,61 @@ class TestBisectLists(unittest.TestCase):
         c = bisect_lists(a, b)
         self.assertEqual(c, None)
 
+    def test_long_identical(self):
+        a = [0, 65281, 10, 11, 35, 1, 16, 5, 17, 13, 42, 15, 21, 22, 23, 84]
+        b = [0, 65281, 10, 11, 35, 1, 16, 5, 17, 13, 42, 15, 21, 22, 23, 84]
+        c = bisect_lists(a, b)
+        self.assertEqual(c,
+                [0, 65281, 10, 11, 35, 1, 16, 5, 17, 13, 42, 15, 21, 22, 23,
+                 84])
+
+    def test_long_identical_objects(self):
+        a = [TLSExtension(extType=i) for i in
+             [0, 65281, 10, 11, 35, 1, 16, 5, 17, 13, 42, 15, 21, 22, 23, 84]]
+        b = [TLSExtension(extType=i) for i in
+             [0, 65281, 10, 11, 35, 1, 16, 5, 17, 13, 42, 15, 21, 22, 23, 84]]
+        c = bisect_lists(a, b)
+        self.assertEqual([i.extType for i in c],
+                         [0, 65281, 10, 11, 35, 1, 16, 5, 17, 13, 42, 15, 21,
+                          22, 23, 84])
+
+    def test_long_different_objects(self):
+        a = [TLSExtension(extType=i) for i in
+             [0, 65281, 10, 11, 35, 1, 16, 5, 17, 13, 42, 15, 21, 22, 23, 84]]
+        b = [TLSExtension(extType=i) for i in
+             [0, 65281, 10, 11, 35, 1, 16, 5, 17, 13, 42, 15, 21, 22, 23]]
+        b += [TLSExtension(extType=84).create(bytearray(1))]
+        self.assertNotEqual(a, b)
+        c = bisect_lists(a, b)
+        self.assertEqual([i.extType for i in c],
+                         [0, 65281, 10, 11, 35, 1, 16, 5, 17, 13, 42, 15, 21,
+                          22, 23, 84])
+        self.assertEqual(c, a)
+
+
+class TestReplaceExt(unittest.TestCase):
+    def test_remove(self):
+        a = [TLSExtension(extType=0), TLSExtension(extType=1)]
+        replace_ext(a, None, 0)
+
+        self.assertEqual(a, [TLSExtension(extType=1)])
+
+    def test_replace(self):
+        a = [TLSExtension(extType=0).create(bytearray(10)),
+             TLSExtension(extType=1)]
+        replace_ext(a, TLSExtension(extType=0).create(bytearray(20)), 0)
+
+        self.assertEqual(a, [TLSExtension(extType=0).create(bytearray(20)),
+                             TLSExtension(extType=1)])
+
+    def test_add(self):
+        a = [TLSExtension(extType=1)]
+        replace_ext(a, TLSExtension(extType=0).create(bytearray(20)), 0)
+
+        self.assertEqual(a, [TLSExtension(extType=1),
+                             TLSExtension(extType=0).create(bytearray(20))])
+
+
 class TestBisect(unittest.TestCase):
     def test___init__(self):
         b = Bisect(None, None, None, None)
@@ -252,6 +309,27 @@ class TestBisect(unittest.TestCase):
 
         bi = Bisect(good, bad, "localhost", test_cb)
 
+        a, b = bi.run()
+
+        # it comes down to truncating ciphers, so there is a two
+        # byte difference
+        self.assertEqual(len(a.write()), 2**14-1)
+        self.assertEqual(len(b.write()), 2**14+1)
+
+    def test_run_with_pad_and_84_ext(self):
+        def test_cb(hello):
+            return len(hello.write()) <= 2**14
+
+        # Xmas tree has a random key share, so we need to use the exact
+        # same object for testing
+        good = Xmas_tree()
+        bad = extend_with_ext_to_size(copy.deepcopy(good), 2**15, 84)
+        self.assertFalse(test_cb(bad(b"localhost")))
+        self.assertTrue(test_cb(good(b"localhost")))
+
+        bi = Bisect(good, bad, "localhost", test_cb)
+
+        #import pdb; pdb.set_trace()
         a, b = bi.run()
 
         self.assertEqual(len(a.write()), 2**14)
