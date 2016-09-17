@@ -59,6 +59,22 @@ def no_extensions(generator):
     return generator
 
 
+def add_one_to_pad_extension(generator):
+    """If not present add padding extension, make it one byte longer"""
+
+    if generator.extensions is None:
+        generator.extensions = []
+    padd_ext = next((i for i in generator.extensions
+                     if i.extType == ExtensionType.client_hello_padding), None)
+    if not padd_ext:
+        padd_ext = PaddingExtension()
+        generator.extensions.append(padd_ext)
+    padd_ext.paddingData += bytearray(1)
+
+    generator.modifications += ["pad +1"]
+    return generator
+
+
 def divceil(divident, divisor):
     quot, r = divmod(divident, divisor)
     return quot + int(bool(r))

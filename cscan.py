@@ -19,7 +19,7 @@ from cscan.config import Xmas_tree, IE_6, IE_8_Win_XP, \
         VeryCompatible
 from cscan.modifiers import no_sni, set_hello_version, set_record_version, \
         no_extensions, truncate_ciphers_to_size, append_ciphers_to_size, \
-        extend_with_ext_to_size, add_empty_ext
+        extend_with_ext_to_size, add_empty_ext, add_one_to_pad_extension
 from cscan.bisector import Bisect
 
 
@@ -315,8 +315,19 @@ def scan_TLS_intolerancies(host, port, hostname):
         if good:
             bisect = Bisect(good, bad, hostname, test_cb)
             good_h, bad_h = bisect.run()
-            intolerancies["size c/{0}".format(len(bad_h.write()))] = True
-            intolerancies["size c/{0}".format(len(good_h.write()))] = False
+            # check what happens if the boundary lands on an odd byte
+            good = add_one_to_pad_extension(copy.deepcopy(good_conf))
+            bad = add_one_to_pad_extension(copy.deepcopy(good_conf))
+            # short circuit to around the boundary previously found
+            good = append_ciphers_to_size(good, len(good_h.write()) - 1)
+            bad = append_ciphers_to_size(bad, len(bad_h.write()) + 1)
+            bisect = Bisect(good, bad, hostname, test_cb)
+            good_h2, bad_h2 = bisect.run()
+            # report with full precision (highest accepted, smallest rejected
+            intolerancies["size c/{0}".format(min(len(bad_h.write()),
+                                                  len(bad_h2.write())))] = True
+            intolerancies["size c/{0}".format(max(len(good_h.write()),
+                                                  len(good_h2.write())))] = False
             intolerancies["size c#/{0}".format(len(bad_h.cipher_suites))] = True
             intolerancies["size c#/{0}".format(len(good_h.cipher_suites))] = False
 
