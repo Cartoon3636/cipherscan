@@ -126,6 +126,27 @@ def append_ciphers_to_size(generator, size):
     return generator
 
 
+def append_ciphers_to_number(generator, number):
+    """
+    Create hello with number ciphers using ciphers from 0x2000-0xa000 range
+
+    Increases the size of Client Hello by adding ciphers until there are
+    at least number ciphers in hello
+    """
+    ciphers_iter = iter(range(0x2000, 0xc000))
+    ciphers_present = set(generator.ciphers)
+    ciphers_present.add(CipherSuite.TLS_FALLBACK_SCSV)
+
+    ciphers_to_add = number - len(generator.ciphers)
+    if ciphers_to_add > 0:
+        ciphers_gen = (i for i in ciphers_iter
+                       if i not in ciphers_present)
+        generator.ciphers.extend(itertools.islice(ciphers_gen,
+                                                  ciphers_to_add))
+    generator.modifications += ["ciphers {0}".format(ciphers_to_add)]
+    return generator
+
+
 def extend_with_ext_to_size(generator, size,
                             ext_type=ExtensionType.client_hello_padding):
     """
@@ -165,6 +186,39 @@ def extend_with_ext_to_size(generator, size,
     generator.callbacks.append(cb_fun)
     generator.modifications += ["append e/{0}".format(size)]
     return generator
+
+
+def set_extensions_to_size(generator, size):
+    """
+    Set extensions length to size, add padding extension if missing
+
+    Extend only the extensions field in Client Hello, so that it is `size`
+    bytes long. Adds padding extension if it's missing, extends it if it
+    is already present
+    """
+
+    def cb_fun(client_hello, size=size):
+        if not client_hello.extensions:
+            client_hello.extensions = []
+        ext = next((i for i in client_hello.extensions
+                    if i.extType == ExtensionType.client_hello_padding), None)
+        extensions_size = sum(len(i.write()) for i in client_hello.extensions)
+        bytes_to_add = size - extensions_size
+        if bytes_to_add <= 0:
+            return client_hello
+        # can't add through single extension less than 4 bytes
+        if bytes_to_add < 4 and not ext:
+            return client_hello
+        if not ext:
+            ext = PaddingExtension()
+            client_hello.extensions.append(ext)
+            bytes_to_add -= 4  # extension header
+        ext.paddingData += bytearray(bytes_to_add)
+        return client_hello
+    generator.callbacks.append(cb_fun)
+    generator.modifications += ["size ext {0}".format(size)]
+    return generator
+
 
 def add_empty_ext(generator, ext_type):
     if generator.extensions is None:

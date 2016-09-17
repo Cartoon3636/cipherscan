@@ -19,7 +19,8 @@ from cscan.config import Xmas_tree, IE_6, IE_8_Win_XP, \
         VeryCompatible
 from cscan.modifiers import no_sni, set_hello_version, set_record_version, \
         no_extensions, truncate_ciphers_to_size, append_ciphers_to_size, \
-        extend_with_ext_to_size, add_empty_ext, add_one_to_pad_extension
+        extend_with_ext_to_size, add_empty_ext, add_one_to_pad_extension, \
+        set_extensions_to_size, append_ciphers_to_number
 from cscan.bisector import Bisect
 
 
@@ -28,6 +29,8 @@ def scan_with_config(host, port, conf, hostname, __sentry=None, __cache={}):
     assert __sentry is None
     key = (host, port, conf, hostname)
     if key in __cache:
+        if verbose and not json_out:
+            print(":", end='')
         return __cache[key]
 
     scanner = Scanner(conf, host, port, hostname)
@@ -348,6 +351,8 @@ def scan_TLS_intolerancies(host, port, hostname):
                           if configs[name].extensions and
                           simple_inspector(result)), None)
 
+        size_limit = False
+
         if good_conf:
             size_e_16382 = simple_inspector(scan_with_config(host, port,
                 extend_with_ext_to_size(copy.deepcopy(good_conf), 16382), hostname))
@@ -371,12 +376,12 @@ def scan_TLS_intolerancies(host, port, hostname):
                     good = extend_with_ext_to_size(copy.deepcopy(good_conf), 16392)
 
             if good:
+                size_limit = True
                 bisect = Bisect(good, bad, hostname, test_cb)
                 good_h, bad_h = bisect.run()
                 intolerancies["size e/{0}".format(len(bad_h.write()))] = True
                 intolerancies["size e/{0}".format(len(good_h.write()))] = False
 
-        if good_conf:
             # double check the result of the scan with padding extension
             size_e_16382 = simple_inspector(scan_with_config(host, port,
                 extend_with_ext_to_size(copy.deepcopy(good_conf), 16382,
@@ -407,10 +412,28 @@ def scan_TLS_intolerancies(host, port, hostname):
                                                    84)
 
             if good:
+                size_limit = True
                 bisect = Bisect(good, bad, hostname, test_cb)
                 good_h, bad_h = bisect.run()
                 intolerancies["size #84 e/{0}".format(len(bad_h.write()))] = True
                 intolerancies["size #84 e/{0}".format(len(good_h.write()))] = False
+
+            if not size_limit:
+                size_max_gen = set_extensions_to_size(copy.deepcopy(good_conf),
+                                                      0xffff)
+                size_max_gen = append_ciphers_to_number(size_max_gen,
+                                                        0xfffe//2)
+                size_max = scan_with_config(host, port, size_max_gen, hostname)
+                if simple_inspector(size_max):
+                    intolerancies["size {0}".format(len(size_max[0].write()))]\
+                            = False
+                else:
+                    bad = size_max_gen
+                    good = copy.deepcopy(good_conf)
+                    bisect = Bisect(good, bad, hostname, test_cb)
+                    good_h, bad_h = bisect.run()
+                    intolerancies["size {0}".format(len(bad_h.write()))] = True
+                    intolerancies["size {0}".format(len(good_h.write()))] = False
 
     if json_out:
         print(json.dumps(intolerancies))
