@@ -319,8 +319,10 @@ def scan_TLS_intolerancies(host, port, hostname):
     intolerancies["TLS 1.0"] = all(conf_iterator(lambda conf:
                                                  conf.version == (3, 1)))
     intolerancies["extensions"] = all(conf_iterator(lambda conf:
-                                                    conf.extensions and not
-                                                    conf.ssl2))
+                                                    conf.extensions and
+                                                    not conf.ssl2 and
+                                                    [i.extType for i in
+                                                     conf.extensions] != [0]))
 
     if hostname:
         check_extension(ExtensionType.server_name)
