@@ -308,6 +308,9 @@ def scan_TLS_intolerancies(host, port, hostname):
                                   checker(conf.extensions) and
                                   not conf.ssl2))
 
+    if run_all:
+        sum(conf_iterator(lambda conf: True))
+
     host_up = not all(conf_iterator(lambda conf: True))
 
     intolerancies = {}
@@ -616,6 +619,7 @@ def usage():
     """Print usage information."""
     print("./cscan.py [ARGUMENTS] host[:port] [SNI-HOST-NAME]")
     print()
+    print("-a                   Run all probes")
     print("-l, --list           List probe names")
     print("-p name, --probe     Run just a single probe")
     print("-j, --json           Output in JSON format")
@@ -624,7 +628,7 @@ def usage():
 if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:],
-                                   "jvhlp:",
+                                   "jvhlp:a",
                                    ["json", "verbose", "help", "list",
                                     "probe=", "no-header"])
     except getopt.GetoptError as err:
@@ -637,6 +641,7 @@ if __name__ == "__main__":
     list_probes = False
     run_probe = None
     no_header = False
+    run_all = False
 
     for opt, arg in opts:
         if opt in ('-j', '--json'):
@@ -652,6 +657,8 @@ if __name__ == "__main__":
             run_probe = arg
         elif opt in ('--no-header', ):
             no_header = True
+        elif opt == '-a':
+            run_all = True
         else:
             raise AssertionError("Unknown option {0}".format(opt))
 
