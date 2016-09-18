@@ -271,6 +271,10 @@ def scan_TLS_intolerancies(host, port, hostname):
         predicate (a function that returns true or false depending if given
         config is ok for test at hand) while saving the results to the
         cache/verbose `results` log/dictionary
+
+        The iterator returns False for every connection that succeeded
+        (meaning the server is NOT intolerant to config and True to mean
+        that server IS intolerant to config.
         """
         scan_iter = (not simple_inspector(result_cache(name, conf))
                      for name, conf in configs.items()
