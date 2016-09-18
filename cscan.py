@@ -216,10 +216,6 @@ def load_configs():
     gen = extend_with_ext_to_size(IE_8_Win_XP(), 200)
     configs[gen.name] = gen
 
-    for ext_id in (0, 1, 2, 3, 4, 5):
-        gen = add_empty_ext(IE_8_Win_XP(), ext_id)
-        configs[gen.name] = gen
-
     # IE 11 on Win 7 configs
     gen = IE_11_Win_7()
     configs[gen.name] = gen
