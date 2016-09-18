@@ -90,7 +90,7 @@ def bisect_padding_extension(first, second):
     if first is None and second is not None:
         if len(second.paddingData) == 0:
             return None
-        return PaddingExtension()
+        first = PaddingExtension()
     # if both have data, bisect the data
     return PaddingExtension().create((len(first.paddingData) +
                                       len(second.paddingData)) // 2)
@@ -104,7 +104,7 @@ def bisect_ext_84(first, second):
     if first is None and second is not None:
         if len(second.extData) == 0:
             return None
-        return TLSExtension(extType=84)
+        first = TLSExtension(extType=84)
     return TLSExtension(extType=84).create(bytearray((len(first.extData) +
                                            len(second.extData)) // 2))
 
