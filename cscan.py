@@ -5,7 +5,8 @@
 from __future__ import print_function
 from tlslite.messages import ClientHello, ServerHello, ServerHelloDone, Alert
 from tlslite.constants import CipherSuite, \
-        ExtensionType, AlertLevel
+        AlertLevel
+from cscan.constants import ExtensionType
 from tlslite.extensions import TLSExtension
 import sys
 import json
@@ -20,7 +21,8 @@ from cscan.config import Xmas_tree, IE_6, IE_8_Win_XP, \
 from cscan.modifiers import no_sni, set_hello_version, set_record_version, \
         no_extensions, truncate_ciphers_to_size, append_ciphers_to_size, \
         extend_with_ext_to_size, add_empty_ext, add_one_to_pad_extension, \
-        set_extensions_to_size, append_ciphers_to_number
+        set_extensions_to_size, append_ciphers_to_number, leave_only_ext, \
+        ext_id_to_short_name
 from cscan.bisector import Bisect
 
 
@@ -120,7 +122,7 @@ configs = {}
 def load_configs():
     """Load known client configurations for later use in scanning."""
     base_configs = [Xmas_tree, Firefox_42, IE_8_Win_XP, IE_11_Win_7,
-                    VeryCompatible]
+                    VeryCompatible, IE_6_ext_tls_1_0]
     for conf in base_configs:
         # only no extensions
         gen = no_extensions(conf())
@@ -128,6 +130,27 @@ def load_configs():
 
         gen = no_sni(conf())
         configs[gen.name] = gen
+
+        # single ext alone
+        for ext_id in (ExtensionType.server_name,
+                       ExtensionType.extended_master_secret,
+                       ExtensionType.status_request,
+                       ExtensionType.encrypt_then_mac,
+                       ExtensionType.signature_algorithms,
+                       ExtensionType.supports_npn,
+                       ExtensionType.alpn):
+            gen = leave_only_ext(conf(), ext_id)
+            configs[gen.name] = gen
+
+        # add custom ext code points
+        for ext_id in (ExtensionType.extended_master_secret,
+                       ExtensionType.encrypt_then_mac,
+                       ExtensionType.client_hello_padding,
+                       38,
+                       ExtensionType.key_share,
+                       ExtensionType.supports_npn):
+            gen = add_empty_ext(conf(), ext_id)
+            configs[gen.name] = gen
 
         for version in ((3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 254),
                         (4, 0), (4, 3), (255, 255)):
@@ -254,6 +277,19 @@ def scan_TLS_intolerancies(host, port, hostname):
                      if predicate(conf))
         return itertools.chain(result_iterator(predicate), scan_iter)
 
+    def ext_checker(ext_type):
+        """create generator that will check if extension is present"""
+        return lambda exts, t=ext_type: any(i.extType == t for i in exts)
+
+    def check_extension(ext_id):
+        """Test for tolerance of single extension"""
+        checker = ext_checker(ext_id)
+        ext_name = ext_id_to_short_name(ext_id)
+        intolerancies["ext:" + ext_name] =\
+                all(conf_iterator(lambda conf: conf.extensions and
+                                  checker(conf.extensions) and
+                                  not conf.ssl2))
+
     host_up = not all(conf_iterator(lambda conf: True))
 
     intolerancies = {}
@@ -285,6 +321,19 @@ def scan_TLS_intolerancies(host, port, hostname):
     intolerancies["extensions"] = all(conf_iterator(lambda conf:
                                                     conf.extensions and not
                                                     conf.ssl2))
+
+    if hostname:
+        check_extension(ExtensionType.server_name)
+
+    for ext_id in (ExtensionType.extended_master_secret,
+                   ExtensionType.status_request,
+                   ExtensionType.encrypt_then_mac,
+                   ExtensionType.client_hello_padding,
+                   ExtensionType.alpn,
+                   38,
+                   ExtensionType.key_share,
+                   ExtensionType.supports_npn):
+        check_extension(ext_id)
 
     #for name in ["Xmas tree", "Very Compatible"]:
     #    intolerancies["x:" + name] = all(conf_iterator(lambda conf:

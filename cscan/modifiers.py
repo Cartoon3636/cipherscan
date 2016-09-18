@@ -3,7 +3,7 @@
 """Methods for modifying the scan configurations on the fly."""
 
 from __future__ import print_function
-from tlslite.constants import CipherSuite, ExtensionType
+from cscan.constants import CipherSuite, ExtensionType
 from tlslite.extensions import SNIExtension, PaddingExtension, TLSExtension
 import itertools
 
@@ -220,10 +220,54 @@ def set_extensions_to_size(generator, size):
     return generator
 
 
+def ext_id_to_short_name(ext_type):
+    if ext_type == ExtensionType.server_name:  # 0
+        return "SNI"
+    elif ext_type == ExtensionType.status_request:  # 5
+        return "OCSP staple"
+    elif ext_type == ExtensionType.signature_algorithms:  # 13
+        return "SigAlgs"
+    elif ext_type == ExtensionType.alpn:  # 16
+        return "ALPN"
+    elif ext_type == ExtensionType.client_hello_padding:  # 21
+        return "padding"
+    elif ext_type == ExtensionType.encrypt_then_mac:  # 22
+        return "EtM"
+    elif ext_type == ExtensionType.extended_master_secret:  # 23
+        return "EMS"
+    elif ext_type == ExtensionType.supports_npn:  # 13172
+        return "NPN"
+    # early assignments for TLSv1.3
+    elif ext_type == ExtensionType.pre_shared_key:  # 41
+        return "PSK"
+    elif ext_type == ExtensionType.key_share:  # 42
+        return "key share"
+    else:
+        return "ext #{0}".format(ext_type)
+
+
+def leave_only_ext(generator, ext_type):
+    if not generator.extensions:
+        return generator
+    new_ext = [i for i in generator.extensions if i.extType == ext_type]
+    if not new_ext:
+        return generator
+    generator.extensions[:] = new_ext
+    ext_name = ext_id_to_short_name(ext_type)
+    generator.modifications += ["only {0}".format(ext_name)]
+    return generator
+
+
 def add_empty_ext(generator, ext_type):
     if generator.extensions is None:
         generator.extensions = []
-    generator.extensions += [TLSExtension(extType=ext_type)
-                             .create(bytearray(0))]
-    generator.modifications += ["add ext {0}".format(ext_type)]
+    if any(i.extType == ext_type for i in generator.extensions):
+        return generator
+    if ext_type == ExtensionType.client_hello_padding:
+        ext = PaddingExtension()
+    else:
+        ext = TLSExtension(extType=ext_type)
+    generator.extensions += [ext]
+    ext_name = ext_id_to_short_name(ext_type)
+    generator.modifications += ["add {0}".format(ext_name)]
     return generator
