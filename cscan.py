@@ -22,7 +22,7 @@ from cscan.modifiers import no_sni, set_hello_version, set_record_version, \
         no_extensions, truncate_ciphers_to_size, append_ciphers_to_size, \
         extend_with_ext_to_size, add_empty_ext, add_one_to_pad_extension, \
         set_extensions_to_size, append_ciphers_to_number, leave_only_ext, \
-        ext_id_to_short_name
+        ext_id_to_short_name, no_empty_last_ext
 from cscan.bisector import Bisect
 
 
@@ -128,7 +128,16 @@ def load_configs():
         gen = no_extensions(conf())
         configs[gen.name] = gen
 
+        gen = add_empty_ext(no_extensions(conf()), 38)
+        configs[gen.name] = gen
+
+        gen = no_empty_last_ext(add_empty_ext(no_extensions(conf()), 38))
+        configs[gen.name] = gen
+
         gen = no_sni(conf())
+        configs[gen.name] = gen
+
+        gen = no_empty_last_ext(conf())
         configs[gen.name] = gen
 
         # single ext alone
@@ -138,8 +147,14 @@ def load_configs():
                        ExtensionType.encrypt_then_mac,
                        ExtensionType.signature_algorithms,
                        ExtensionType.supports_npn,
-                       ExtensionType.alpn):
+                       ExtensionType.alpn,
+                       ExtensionType.pre_shared_key,
+                       ExtensionType.key_share):
             gen = leave_only_ext(conf(), ext_id)
+            configs[gen.name] = gen
+
+            # or with a short padding extension
+            gen = no_empty_last_ext(leave_only_ext(conf(), ext_id))
             configs[gen.name] = gen
 
         # add custom ext code points
@@ -150,6 +165,9 @@ def load_configs():
                        ExtensionType.key_share,
                        ExtensionType.supports_npn):
             gen = add_empty_ext(conf(), ext_id)
+            configs[gen.name] = gen
+
+            gen = no_empty_last_ext(add_empty_ext(conf(), ext_id))
             configs[gen.name] = gen
 
         for version in ((3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 254),
@@ -340,6 +358,41 @@ def scan_TLS_intolerancies(host, port, hostname):
     #for name in ["Xmas tree", "Very Compatible"]:
     #    intolerancies["x:" + name] = all(conf_iterator(lambda conf:
     #                                                   conf.name == name))
+
+    # check for last extension empty intolerance
+    def last_ext_empty(conf):
+        if not conf.extensions:
+            return False
+
+        if not hostname and \
+                conf.extensions[-1].extType == ExtensionType.server_name:
+            if len(conf.extensions) == 1:
+                return False
+            return not conf.extensions[-2].extData
+        elif hostname and conf.extensions[-1].extType == ExtensionType.server_name:
+            return False
+        return not conf.extensions[-1].extData
+
+    def last_ext_not_empty(conf):
+        if not conf.extensions:
+            return False
+
+        if not hostname and \
+                conf.extensions[-1].extType == ExtensionType.server_name:
+            if len(conf.extensions) == 1:
+                return False
+            return bool(conf.extensions[-2].extData)
+        elif hostname and conf.extensions[-1].extType == ExtensionType.server_name:
+            return True
+        return bool(conf.extensions[-1].extData)
+
+    if all(conf_iterator(last_ext_empty)) and not \
+            all(conf_iterator(last_ext_not_empty)):
+        intolerancies["last ext empty"] = True
+    if not all(conf_iterator(last_ext_empty)) and not \
+                all(conf_iterator(last_ext_not_empty)):
+        intolerancies["last ext empty"] = False
+
 
     def test_cb(client_hello):
         ret = scan_with_config(host, port, lambda _:client_hello, hostname)

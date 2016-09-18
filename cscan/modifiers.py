@@ -271,3 +271,23 @@ def add_empty_ext(generator, ext_type):
     ext_name = ext_id_to_short_name(ext_type)
     generator.modifications += ["add {0}".format(ext_name)]
     return generator
+
+def no_empty_last_ext(generator):
+    """Reshuffle or add extensions so the last ext is not empty"""
+    exts = generator.extensions
+    if not exts:
+        return generator
+
+    # make sure we have at least one non-zero extension
+    if all(len(i.extData) == 0 for i in exts):
+        generator = add_one_to_pad_extension(generator)
+        exts = generator.extensions
+
+    # and place it last (if it's not done already)
+    if not exts[-1].extData:
+        non_zero_ext = next(i for i in exts if i.extData)
+        exts.remove(non_zero_ext)
+        exts.append(non_zero_ext)
+        generator.modifications += ["no empty last ext"]
+
+    return generator
