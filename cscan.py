@@ -515,6 +515,7 @@ def scan_TLS_intolerancies(host, port, hostname):
                 intolerancies["size #84 e/{0}".format(len(bad_h.write()))] = True
                 intolerancies["size #84 e/{0}".format(len(good_h.write()))] = False
 
+            # if no intolerance detected, look for higher sizes
             if not size_limit:
                 size_max_gen = set_extensions_to_size(copy.deepcopy(good_conf),
                                                       0xffff)
