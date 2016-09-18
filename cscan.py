@@ -435,6 +435,50 @@ def scan_TLS_intolerancies(host, port, hostname):
                 intolerancies["size e/{0}".format(len(bad_h.write()))] = True
                 intolerancies["size e/{0}".format(len(good_h.write()))] = False
 
+            # check if server doesn't have 256 <= x < 512 bytes intolerance
+            all_configs_iter = conf_iterator(lambda conf: conf.extensions
+                                             and not conf.ssl2)
+            while True:
+                small_conf = next((configs[name] for name, result in results.items()
+                                   if simple_inspector(result) and
+                                   result[0].extensions and
+                                   len(result[0].write()) < 256), None)
+                if small_conf is None:
+                    if all(all_configs_iter):
+                        continue
+                    else:
+                        break
+
+                medium_conf = extend_with_ext_to_size(copy.deepcopy(small_conf),
+                                                      384)
+                big_conf = extend_with_ext_to_size(copy.deepcopy(small_conf),
+                                                   640)
+                size_e_384 = simple_inspector(scan_with_config(host, port,
+                                              medium_conf, hostname))
+                size_e_640 = simple_inspector(scan_with_config(host, port,
+                                              big_conf, hostname))
+                if not size_e_640:
+                    intolerancies["size e/640"] = True
+                    # different bug, should have been caught by the generic
+                    # code
+                    break
+
+                if size_e_384:
+                    intolerancies["size e/384"] = False
+                    break
+
+                bisect = Bisect(small_conf, medium_conf, hostname, test_cb)
+                good_h, bad_h = bisect.run()
+                intolerancies["size e/{0}".format(len(good_h.write()))] = False
+                intolerancies["size e/{0}".format(len(bad_h.write()))] = True
+
+                bisect = Bisect(big_conf, medium_conf, hostname, test_cb)
+                good_h, bad_h = bisect.run()
+                intolerancies["size e/{0}".format(len(good_h.write()))] = False
+                intolerancies["size e/{0}".format(len(bad_h.write()))] = True
+
+                break
+
             # double check the result of the scan with padding extension
             size_e_16382 = simple_inspector(scan_with_config(host, port,
                 extend_with_ext_to_size(copy.deepcopy(good_conf), 16382,
