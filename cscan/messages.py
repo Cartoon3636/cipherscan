@@ -224,6 +224,14 @@ class Message(messages.Message):
 class ServerKeyExchange(messages.ServerKeyExchange):
     """ServerKeyExchange class with more robust formatting capability."""
 
+    def parse(self, parser):
+        """more robust parser for SKE"""
+        try:
+            super(ServerKeyExchange, self).parse(parser)
+        except AssertionError:
+            pass
+        return self
+
     def __format__(self, formatstr):
         """Return human-readable representation of the object."""
         if 'v' in formatstr:
