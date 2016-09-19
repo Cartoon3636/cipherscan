@@ -4,7 +4,7 @@
 
 import tlslite.constants
 
-from tlslite.constants import CipherSuite
+from tlslite.constants import CipherSuite, HashAlgorithm, SignatureAlgorithm
 
 CipherSuite.ecdheEcdsaSuites = []
 

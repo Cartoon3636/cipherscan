@@ -3,8 +3,10 @@
 """Methods for modifying the scan configurations on the fly."""
 
 from __future__ import print_function
-from cscan.constants import CipherSuite, ExtensionType
+from cscan.constants import CipherSuite, ExtensionType, HashAlgorithm, \
+        SignatureAlgorithm
 from tlslite.extensions import SNIExtension, PaddingExtension, TLSExtension
+from tlslite.constants import GroupName
 import itertools
 
 
@@ -290,4 +292,52 @@ def no_empty_last_ext(generator):
         exts.append(non_zero_ext)
         generator.modifications += ["no empty last ext"]
 
+    return generator
+
+def extra_sig_algs(generator):
+    """Add undefined signature algorithms"""
+    exts = generator.extensions
+    if not exts or generator.version < (3, 3):
+        return generator
+
+    ext = next((i for i in exts
+                if i.extType == ExtensionType.signature_algorithms), None)
+    if not ext:
+        return generator
+
+    present = set(ext.sigalgs)
+
+    ext.sigalgs.extend(i for i
+                       in [(HashAlgorithm.none, SignatureAlgorithm.ecdsa),
+                           (HashAlgorithm.none, 4),
+                           (HashAlgorithm.sha256, 4),
+                           (7, SignatureAlgorithm.anonymous),
+                           (7, SignatureAlgorithm.ecdsa),
+                           (7, 4)]
+                       if i not in present)
+
+    generator.modifications += ["more sigalgs"]
+    return generator
+
+def extra_groups(generator):
+    """Add more curves/groups to curves_extensions"""
+    exts = generator.extensions
+    if not exts:
+        return generator
+
+    ext = next((i for i in exts
+                if i.extType == ExtensionType.supported_groups), None)
+    if not ext:
+        return generator
+
+    present = set(ext.groups)
+
+    ext.groups.extend(i for i in
+                      itertools.chain(GroupName.allFF,
+                                      [GroupName.brainpoolP256r1,
+                                       GroupName.brainpoolP384r1,
+                                       GroupName.brainpoolP512r1],
+                                      [0xcaca, 0xdada])
+                      if i not in present)
+    generator.modifications += ["more groups"]
     return generator

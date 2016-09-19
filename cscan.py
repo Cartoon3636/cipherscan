@@ -22,7 +22,7 @@ from cscan.modifiers import no_sni, set_hello_version, set_record_version, \
         no_extensions, truncate_ciphers_to_size, append_ciphers_to_size, \
         extend_with_ext_to_size, add_empty_ext, add_one_to_pad_extension, \
         set_extensions_to_size, append_ciphers_to_number, leave_only_ext, \
-        ext_id_to_short_name, no_empty_last_ext
+        ext_id_to_short_name, no_empty_last_ext, extra_sig_algs, extra_groups
 from cscan.bisector import Bisect
 
 
@@ -337,7 +337,6 @@ def scan_TLS_intolerancies(host, port, hostname):
                                                     not conf.ssl2 and
                                                     [i.extType for i in
                                                      conf.extensions] != [0]))
-
     if hostname:
         check_extension(ExtensionType.server_name)
 
@@ -389,10 +388,27 @@ def scan_TLS_intolerancies(host, port, hostname):
                 all(conf_iterator(last_ext_not_empty)):
         intolerancies["last ext empty"] = False
 
-
     def test_cb(client_hello):
         ret = scan_with_config(host, port, lambda _:client_hello, hostname)
         return simple_inspector(ret)
+
+    # check for intolerance to undefined signature algorithms
+    good_conf = next((configs[name] for name, result in results.items()
+                      if simple_inspector(result) and result[0].extensions and
+                      any(i.extType == ExtensionType.signature_algorithms for i
+                          in result[0].extensions)), None)
+    if good_conf:
+        intolerancies["more sigalgs"] = not simple_inspector(scan_with_config(
+            host, port, extra_sig_algs(copy.deepcopy(good_conf)), hostname))
+
+    # check for intolerance to undefined and uncommon groups
+    good_conf = next((configs[name] for name, result in results.items()
+                      if simple_inspector(result) and result[0].extensions and
+                      any(i.extType == ExtensionType.supported_groups for i
+                          in result[0].extensions)), None)
+    if good_conf:
+        intolerancies["more groups"] = not simple_inspector(scan_with_config(
+            host, port, extra_groups(copy.deepcopy(good_conf)), hostname))
 
     # most size intolerancies lie between 16385 and 16389 so short-circuit to
     # them if possible
