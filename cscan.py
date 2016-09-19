@@ -50,19 +50,12 @@ class IE_6_ext_tls_1_0(IE_6):
         self.modifications += ["TLSv1.0", "ext"]
         self.version = (3, 1)
         self.record_version = (3, 0)
-
-    def __call__(self, hostname):
-        ret = super(IE_6_ext_tls_1_0, self).__call__(hostname)
-        ret.ssl2 = False
-        # filter out SSLv2 ciphersuites
-        ret.cipher_suites = [i for i in ret.cipher_suites if i <= 0xffff and
-                             i != CipherSuite.
-                             TLS_EMPTY_RENEGOTIATION_INFO_SCSV]
-        ret.extensions = [TLSExtension(extType=ExtensionType.
+        self.ssl2 = False
+        self.ciphers = [i for i in self.ciphers if i <= 0xffff and
+                        i != CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV]
+        self.extensions = [TLSExtension(extType=ExtensionType.
                                        renegotiation_info)
-                          .create(bytearray(1))]
-        return ret
-
+                           .create(bytearray(1))]
 
 def simple_inspector(result):
     """
