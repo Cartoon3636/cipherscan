@@ -86,6 +86,7 @@ class HelloConfig(object):
 class Firefox_42(HelloConfig):
     """Create Client Hello like Firefox 42."""
 
+    # verified by packet capture
     def __init__(self):
         """Set the configuration to Firefox 42."""
         super(Firefox_42, self).__init__()
@@ -139,6 +140,7 @@ class Firefox_42(HelloConfig):
 
 class Firefox_46(HelloConfig):
     """Create ClientHello like Firefox 46"""
+
     # verified by packet capture
     def __init__(self):
         super(Firefox_46, self).__init__()
@@ -410,6 +412,7 @@ class VeryCompatible(HelloConfig):
 class IE_6(HelloConfig):
     """Create a Internet Explorer 6-like Client Hello message"""
 
+    # verified by packet capture
     def __init__(self):
         super(IE_6, self).__init__()
         self._name = "IE 6"
@@ -439,6 +442,7 @@ class IE_6(HelloConfig):
 class IE_8_Win_XP(HelloConfig):
     """Create a Internet Explorer 8 on WinXP-like Client Hello message"""
 
+    # verified by packet capture
     def __init__(self):
         super(IE_8_Win_XP, self).__init__()
         self._name = "IE 8 on Win XP"
@@ -461,11 +465,12 @@ class IE_8_Win_XP(HelloConfig):
 class IE_11_Win_7(HelloConfig):
     """Create an Internet Explorer 11 on Win7-like Client Hello message"""
 
+    # verified by packet capture
     def __init__(self):
         super(IE_11_Win_7, self).__init__()
         self._name = "IE 11 on Win 7"
         self.version = (3, 3)
-        self.record_version = (3, 1)
+        self.record_version = (3, 3)
         self.ciphers = []
         self.ciphers.extend([CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
                              CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
@@ -490,16 +495,17 @@ class IE_11_Win_7(HelloConfig):
                              CipherSuite.TLS_RSA_WITH_RC4_128_MD5])
 
         ext = self.extensions = []
-        ext.append(SNIExtension())
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
-        groups = [GroupName.secp256r1,
-                  GroupName.secp384r1]
-        ext.append(SupportedGroupsExtension().create(groups))
+        ext.append(SNIExtension())
         ext.append(TLSExtension(extType=ExtensionType.status_request)
                    .create(bytearray(b'\x01' +
                                      b'\x00\x00' +
                                      b'\x00\x00')))
+        groups = [GroupName.secp256r1,
+                  GroupName.secp384r1]
+        ext.append(SupportedGroupsExtension().create(groups))
+        ext.append(ECPointFormatsExtension().create([ECPointFormat.uncompressed]))
         sig_algs = []
         for s_alg in ['rsa', 'ecdsa']:
             for h_alg in ['sha256', 'sha384', 'sha1']:
@@ -512,11 +518,12 @@ class IE_11_Win_7(HelloConfig):
 class IE_11_Win_8_1(HelloConfig):
     """Create an Internet Explorer 11 on Win8.1-like Client Hello message"""
 
+    # verified by packet capture
     def __init__(self):
         super(IE_11_Win_8_1, self).__init__()
         self._name = "IE 11 on Win 8.1"
         self.version = (3, 3)
-        self.record_version = (3, 1)
+        self.record_version = (3, 3)
         self.ciphers = [CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
                         CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
                         CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256,
@@ -538,17 +545,17 @@ class IE_11_Win_8_1(HelloConfig):
                         CipherSuite.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA]
 
         ext = self.extensions = []
-        ext.append(SNIExtension())
         ext.append(TLSExtension(extType=ExtensionType.renegotiation_info)
                    .create(bytearray(1)))
-        groups = [GroupName.secp256r1,
-                  GroupName.secp384r1]
-        ext.append(SupportedGroupsExtension().create(groups))
-        ext.append(TLSExtension(extType=ExtensionType.session_ticket))
+        ext.append(SNIExtension())
         ext.append(TLSExtension(extType=ExtensionType.status_request)
                    .create(bytearray(b'\x01' +
                                      b'\x00\x00' +
                                      b'\x00\x00')))
+        groups = [GroupName.secp256r1,
+                  GroupName.secp384r1]
+        ext.append(SupportedGroupsExtension().create(groups))
+        ext.append(ECPointFormatsExtension().create([ECPointFormat.uncompressed]))
         sig_algs = []
         for s_alg in ['rsa', 'ecdsa']:
             for h_alg in ['sha256', 'sha384', 'sha1']:
@@ -556,8 +563,9 @@ class IE_11_Win_8_1(HelloConfig):
                                  getattr(SignatureAlgorithm, s_alg)))
         sig_algs.append((HashAlgorithm.sha1, SignatureAlgorithm.dsa))
         ext.append(SignatureAlgorithmsExtension().create(sig_algs))
-        ext.append(NPNExtension())
+        ext.append(TLSExtension(extType=ExtensionType.session_ticket))
         ext.append(TLSExtension(extType=ExtensionType.alpn)
                    .create(bytearray(b'\x00\x10' +
                                      b'\x06' + b'spdy/3' +
                                      b'\x08' + b'http/1.1')))
+        ext.append(NPNExtension())
