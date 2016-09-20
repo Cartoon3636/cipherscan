@@ -927,6 +927,6 @@ for touple in fallback_ids_sorted:
 
 print("\nClient Hello intolerance                 Count     Percent")
 print("----------------------------------------+---------+-------")
-for stat in sorted(intolerancies):
+for stat in natural_sort(intolerancies):
     percent = round(intolerancies[stat] / total * 100, 4)
     sys.stdout.write(stat.ljust(40) + " " + str(intolerancies[stat]).ljust(10) + str(percent).ljust(4) + "\n")
