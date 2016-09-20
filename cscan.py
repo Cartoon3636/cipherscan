@@ -22,7 +22,8 @@ from cscan.modifiers import no_sni, set_hello_version, set_record_version, \
         no_extensions, truncate_ciphers_to_size, append_ciphers_to_size, \
         extend_with_ext_to_size, add_empty_ext, add_one_to_pad_extension, \
         set_extensions_to_size, append_ciphers_to_number, leave_only_ext, \
-        ext_id_to_short_name, no_empty_last_ext, extra_sig_algs, extra_groups
+        ext_id_to_short_name, no_empty_last_ext, extra_sig_algs, \
+        extra_groups, add_compressions_to_number
 from cscan.bisector import Bisect
 
 
@@ -584,6 +585,7 @@ def scan_TLS_intolerancies(host, port, hostname):
                                                       0xffff)
                 size_max_gen = append_ciphers_to_number(size_max_gen,
                                                         0xfffe//2)
+                size_max_gen = add_compressions_to_number(size_max_gen, 0xff)
                 size_max = scan_with_config(host, port, size_max_gen, hostname)
                 if simple_inspector(size_max):
                     intolerancies["size {0}".format(len(size_max[0].write()))]\

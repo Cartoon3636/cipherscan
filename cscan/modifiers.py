@@ -344,3 +344,18 @@ def extra_groups(generator):
                       if i not in present)
     generator.modifications += ["more groups"]
     return generator
+
+def add_compressions_to_number(generator, num):
+    """Add compression methods to hello"""
+    compress_to_add = num - len(generator.compression_methods)
+    if compress_to_add <= 0:
+        return generator
+    present = set(generator.compression_methods)
+    generator.compression_methods.extend(itertools.islice((i for i in
+                                                           range(0, 256)
+                                                           if i not in
+                                                           present),
+                                                          compress_to_add))
+
+    generator.modifications += ["more comp mthds"]
+    return generator
