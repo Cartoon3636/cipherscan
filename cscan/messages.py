@@ -93,6 +93,24 @@ class ServerHello(messages.ServerHello):
                 extensions)
 
 
+class ClientHello(messages.ClientHello):
+    """Class with enhanced human-readable serialisation."""
+
+    def __format__(self, formatstr):
+        """Return human readable representation of the object."""
+        extensions = format_array(self.extensions, formatstr)
+        random = format_bytearray(self.random, formatstr)
+        session_id = format_bytearray(self.session_id, formatstr)
+        cipher_suites = ", ".join(CipherSuite.ietfNames.get(i, i) for i in
+                                  self.cipher_suites)
+
+        return ("ClientHello(client_version=({0[0]}, {0[1]}), random={1}, "
+                "session_id={2}, cipher_suites=[{3}], "
+                "compression_methods={4!r}, extensions={5})").format(
+                self.client_version, random, session_id, cipher_suites,
+                self.compression_methods, extensions)
+
+
 class Certificate(messages.Certificate):
     """Class with more robust certificate parsing and serialisation."""
 
