@@ -114,6 +114,7 @@ ecccurve = defaultdict(int)
 ocspstaple = defaultdict(int)
 fallbacks = defaultdict(int)
 intolerancies = defaultdict(int)
+impl_families = defaultdict(int)
 # array with indexes of fallback names for the matrix report
 fallback_ids = defaultdict(int)
 i=0
@@ -177,6 +178,7 @@ for r,d,flist in os.walk(path):
         tempecccurve = {}
         tempfallbacks = {}
         tempintolerancies = {}
+        tempimpl_families = {}
         """ supported ciphers by the server under scan """
         tempcipherstats = {}
         temppfssigalgordering = {}
@@ -356,15 +358,16 @@ for r,d,flist in os.walk(path):
                 for name, val in intoler.items():
                     if val is True:
                         tempintolerancies[name] = 1
-                size_intol = [x.replace('size ', '').replace(' ', '')
+                size_intol = [x.replace('size ', '').replace(' ', '_')
                               for x in tempintolerancies.keys()
-                              if x.startswith('size ') and
-                              (not x.startswith('size c#/') or
-                               x.startswith('size c#/') and int(x[8:]) < 5000)]
+                              if (x.startswith('size ') and
+                                  (not x.startswith('size c#/') or
+                                  x.startswith('size c#/') and
+                                  int(x[8:]) < 5000)) or
+                                 x not in ('TLS 1.0', 'TLS 1.1')]
                 if size_intol:
                     size_intol.sort(reverse=True)
-                    tempintolerancies['size {0}'
-                                      .format(" ".join(size_intol))] = 1
+                    tempimpl_families[" ".join(size_intol)] = 1
             else:
                 tempintolerancies['x:missing information'] = 1
 
@@ -594,6 +597,9 @@ for r,d,flist in os.walk(path):
 
         for s in tempintolerancies:
             intolerancies[s] += 1
+
+        for s in tempimpl_families:
+            impl_families[s] += 1
 
         for s in tempsigstats:
             sigalg[s] += 1
@@ -930,3 +936,9 @@ print("----------------------------------------+---------+-------")
 for stat in natural_sort(intolerancies):
     percent = round(intolerancies[stat] / total * 100, 4)
     sys.stdout.write(stat.ljust(40) + " " + str(intolerancies[stat]).ljust(10) + str(percent).ljust(4) + "\n")
+
+print("\nImplementation families                               Count       Percent")
+print("-----------------------------------------------------+-----------+-------")
+for stat in natural_sort(impl_families):
+    percent = round(impl_families[stat] / total * 100, 4)
+    sys.stdout.write(stat.ljust(50) + " " + str(impl_families[stat]).ljust(10) + str(percent).ljust(4) + "\n")
