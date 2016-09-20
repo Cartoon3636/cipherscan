@@ -170,6 +170,8 @@ def bisect_hellos(first, second):
     ret.extensions = bisect_lists(first.extensions, second.extensions)
     ret.compression_methods = bisect_lists(first.compression_methods,
                                            second.compression_methods)
+    # bisect single extensions only if there is no difference in advertised
+    # extension types
     f_ext_ids = [i.extType for i in first.extensions] \
             if first.extensions else []
     s_ext_ids = [i.extType for i in second.extensions] \
@@ -179,10 +181,31 @@ def bisect_hellos(first, second):
     if f_ext_ids == r_ext_ids or s_ext_ids == r_ext_ids:
         ret.extensions = bisect_extensions(first.extensions,
                                            second.extensions)
-    # todo: if there are just single step changes (like version from (3, 1) to
-    # (3, 2) and presence and absence of single extension, pick one of those
-    # changes as pick the one from the *second* list
-    # (as currently always the value from first is selected)
+
+    # handle situations when there is just one-step difference in two fields
+    differences = set()
+    if (ret.client_version == first.client_version and
+            first.client_version != second.client_version):
+        differences.add('version')
+    if (ret.cipher_suites == first.cipher_suites and
+            first.cipher_suites != second.cipher_suites):
+        differences.add('ciphers')
+    if (ret.extensions == first.extensions and
+            first.extensions != second.extensions):
+        differences.add('extensions')
+    if (ret.compression_methods == first.compression_methods and
+            first.compression_methods != second.compression_methods):
+        differences.add('compression')
+    if len(differences) > 1:
+        if "version" in differences:
+            ret.client_version = copy.copy(second.client_version)
+        elif "extensions" in differences:
+            ret.extensions = copy.copy(second.extensions)
+        elif "compression" in differences:
+            ret.compression_methods = copy.copy(second.compression_methods)
+        elif "ciphers" in differences:
+            ret.cipher_suites = copy.copy(second.cipher_suites)
+
     return ret
 
 class Bisect(object):

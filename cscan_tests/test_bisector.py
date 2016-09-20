@@ -251,8 +251,8 @@ class TestBisect(unittest.TestCase):
 
         bad = append_ciphers_to_size(Xmas_tree(), 2**15)
         good = VeryCompatible()
-        self.assertGreater(len(bad(b'').write()), 2**14)
-        self.assertLess(len(good(b'').write()), 2**14)
+        self.assertGreater(len(bad(b'localhost').write()), 2**14)
+        self.assertLess(len(good(b'localhost').write()), 2**14)
 
         bi = Bisect(good, bad, "localhost", test_cb)
 
@@ -279,7 +279,8 @@ class TestBisect(unittest.TestCase):
         a, b = bi.run()
 
         ext = next((x for x in a.extensions
-                    if isinstance(x, SignatureAlgorithmsExtension)), None)
+                    if isinstance(x, SignatureAlgorithmsExtension)), None) \
+              if a.extensions else None
         self.assertIsNone(ext)
         ext = next((x for x in b.extensions
                     if isinstance(x, SignatureAlgorithmsExtension)), None)
@@ -311,10 +312,41 @@ class TestBisect(unittest.TestCase):
 
         a, b = bi.run()
 
-        # it comes down to truncating ciphers, so there is a two
-        # byte difference
-        self.assertEqual(len(a.write()), 2**14-1)
-        self.assertEqual(len(b.write()), 2**14+1)
+        # the boundary can be found by truncating ciphers, not extensions
+        self.assertIn(len(a.write()), (2**14, 2**14 - 1))
+        self.assertIn(len(b.write()), (2**14 + 1, 2**14 + 2))
+
+    def test_run_with_ext_and_ciphers_plus_one(self):
+        def test_cb(hello):
+            return len(hello.write()) <= 2**14 + 1
+
+        bad = extend_with_ext_to_size(VeryCompatible(), 2**15)
+        bad = append_ciphers_to_size(bad, 2**16)
+        good = VeryCompatible()
+
+        bi = Bisect(good, bad, "localhost", test_cb)
+
+        a, b = bi.run()
+
+        # the boundary can be found by truncating ciphers, not extensions
+        self.assertIn(len(a.write()), (2**14 + 1, 2**14))
+        self.assertIn(len(b.write()), (2**14 + 2, 2**14 + 3))
+
+    def test_run_with_ext_and_ciphers_plus_two(self):
+        def test_cb(hello):
+            return len(hello.write()) <= 2**14 + 2
+
+        bad = extend_with_ext_to_size(VeryCompatible(), 2**15)
+        bad = append_ciphers_to_size(bad, 2**16)
+        good = VeryCompatible()
+
+        bi = Bisect(good, bad, "localhost", test_cb)
+
+        a, b = bi.run()
+
+        # the boundary can be found by truncating ciphers, not extensions
+        self.assertIn(len(a.write()), (2**14 + 2, 2**14 + 1))
+        self.assertIn(len(b.write()), (2**14 + 3, 2**14 + 4))
 
     def test_run_with_pad_and_84_ext(self):
         def test_cb(hello):

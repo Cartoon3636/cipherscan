@@ -593,8 +593,21 @@ def scan_TLS_intolerancies(host, port, hostname):
                     good = copy.deepcopy(good_conf)
                     bisect = Bisect(good, bad, hostname, test_cb)
                     good_h, bad_h = bisect.run()
-                    intolerancies["size {0}".format(len(bad_h.write()))] = True
-                    intolerancies["size {0}".format(len(good_h.write()))] = False
+                    good_len = len(good_h.write())
+                    bad_len = len(bad_h.write())
+                    if bad_len - 1 != good_len:
+                        good = append_ciphers_to_size(copy.deepcopy(good_conf),
+                                                      good_len)
+                        good = extend_with_ext_to_size(good, good_len)
+                        bad = append_ciphers_to_size(copy.deepcopy(good_conf),
+                                                     good_len)
+                        bad = extend_with_ext_to_size(bad, bad_len)
+                        bisect = Bisect(good, bad, hostname, test_cb)
+                        good_h, bad_h = bisect.run()
+                        good_len = len(good_h.write())
+                        bad_len = len(bad_h.write())
+                    intolerancies["size {0}".format(bad_len)] = True
+                    intolerancies["size {0}".format(good_len)] = False
 
     if json_out:
         print(json.dumps(intolerancies))

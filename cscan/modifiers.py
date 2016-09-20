@@ -118,6 +118,9 @@ def append_ciphers_to_size(generator, size):
         bytes_to_add = size - len(client_hello.write())
         if bytes_to_add > 0:
             ciphers_to_add = divceil(bytes_to_add, 2)
+            # do not overflow the length of ciphers
+            if len(client_hello.cipher_suites) + ciphers_to_add > 0xfffe // 2:
+                ciphers_to_add = 0xfffe // 2 - len(client_hello.cipher_suites)
             ciphers_gen = (x for x in ciphers_iter
                            if x not in ciphers_present)
             client_hello.cipher_suites.extend(itertools.islice(ciphers_gen,
