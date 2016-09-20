@@ -356,9 +356,11 @@ for r,d,flist in os.walk(path):
                 for name, val in intoler.items():
                     if val is True:
                         tempintolerancies[name] = 1
-                size_intol = [x.replace('size ', '')
+                size_intol = [x.replace('size ', '').replace(' ', '')
                               for x in tempintolerancies.keys()
-                              if x.startswith('size ')]
+                              if x.startswith('size ') and
+                              (not x.startswith('size c#/') or
+                               x.startswith('size c#/') and int(x[8:]) < 5000)]
                 if size_intol:
                     size_intol.sort(reverse=True)
                     tempintolerancies['size {0}'
