@@ -21,7 +21,7 @@ class TestFirefox(unittest.TestCase):
 
         self.assertIsNotNone(ch)
         self.assertIsInstance(ch, ClientHello)
-        self.assertEqual(len(ch.write()), 176)
+        self.assertEqual(len(ch.write()), 180)
         self.assertEqual(ch.client_version, (3, 3))
         self.assertEqual(gen.record_version, (3, 1))
         self.assertEqual(len(ch.cipher_suites), 11)
@@ -34,14 +34,13 @@ class TestFirefox(unittest.TestCase):
                               ECPointFormatsExtension)
         self.assertEqual(ch.extensions[4].extType,
                          ExtensionType.session_ticket)
-        # bug in tlslite-ng, removes NPN extensions from provided extensions
-        #self.assertIsInstance(ch.extensions[5],
-        #                      NPNExtension)
-        self.assertEqual(ch.extensions[5].extType,
-                         ExtensionType.alpn)
+        self.assertIsInstance(ch.extensions[5],
+                              NPNExtension)
         self.assertEqual(ch.extensions[6].extType,
+                         ExtensionType.alpn)
+        self.assertEqual(ch.extensions[7].extType,
                          ExtensionType.status_request)
-        self.assertIsInstance(ch.extensions[7],
+        self.assertIsInstance(ch.extensions[8],
                               SignatureAlgorithmsExtension)
         self.assertEqual(ch.compression_methods, [0])
 
@@ -51,7 +50,7 @@ class TestFirefox(unittest.TestCase):
 
         self.assertIsNotNone(ch)
         self.assertIsInstance(ch, ClientHello)
-        self.assertEqual(len(ch.write()), 180)
+        self.assertEqual(len(ch.write()), 184)
         self.assertEqual(ch.client_version, (3, 3))
         self.assertEqual(gen.record_version, (3, 1))
         self.assertEqual(len(ch.cipher_suites), 11)
@@ -66,14 +65,13 @@ class TestFirefox(unittest.TestCase):
                               ECPointFormatsExtension)
         self.assertEqual(ch.extensions[5].extType,
                          ExtensionType.session_ticket)
-        # bug in tlslite-ng, removes NPN extensions from provided extensions
-        #self.assertIsInstance(ch.extensions[6],
-        #                      NPNExtension)
-        self.assertEqual(ch.extensions[6].extType,
-                         ExtensionType.alpn)
+        self.assertIsInstance(ch.extensions[6],
+                              NPNExtension)
         self.assertEqual(ch.extensions[7].extType,
+                         ExtensionType.alpn)
+        self.assertEqual(ch.extensions[8].extType,
                          ExtensionType.status_request)
-        self.assertIsInstance(ch.extensions[8],
+        self.assertIsInstance(ch.extensions[9],
                               SignatureAlgorithmsExtension)
         self.assertEqual(ch.compression_methods, [0])
 
@@ -83,7 +81,7 @@ class TestXmasTree(unittest.TestCase):
 
         self.assertIsNotNone(ch)
         self.assertIsInstance(ch, ClientHello)
-        self.assertEqual(len(ch.write()), 2792)
+        self.assertEqual(len(ch.write()), 2802)
 
     def test_xmas_tree_tls_1_3_parse(self):
         ch = Xmas_tree()(bytearray(b'example.com'))

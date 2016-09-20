@@ -15,7 +15,7 @@ class TestTruncateCiphersToSize(unittest.TestCase):
     def test_with_big_hello(self):
         gen = Xmas_tree()
 
-        self.assertEqual(len(gen(b'localhost').write()), 2790)
+        self.assertEqual(len(gen(b'localhost').write()), 2800)
         self.assertEqual(gen(b'localhost').cipher_suites[0], 49196)
 
         gen = truncate_ciphers_to_size(gen, 2780)
@@ -63,7 +63,7 @@ class TestSetExtensionsToSize(unittest.TestCase):
     def test_with_small_hello(self):
         gen = Firefox_42()
 
-        self.assertEqual(len(gen(b'localhost').write()), 174)
+        self.assertEqual(len(gen(b'localhost').write()), 178)
 
         gen = set_extensions_to_size(gen, 0xffff)
 
