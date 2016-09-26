@@ -364,7 +364,8 @@ for r,d,flist in os.walk(path):
                                   (not x.startswith('size c#/') or
                                   x.startswith('size c#/') and
                                   int(x[8:]) < 5000)) or
-                                 x not in ('TLS 1.0', 'TLS 1.1')]
+                                 x not in ('TLS 1.0', 'TLS 1.1')
+                                 and not x.statswith('size c#/')]
                 if size_intol:
                     size_intol.sort(reverse=True)
                     tempimpl_families[" ".join(size_intol)] = 1
