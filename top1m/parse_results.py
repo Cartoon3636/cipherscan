@@ -366,6 +366,17 @@ for r,d,flist in os.walk(path):
                                   int(x[8:]) < 5000)) or
                                  x not in ('TLS 1.0', 'TLS 1.1')
                                  and not x.startswith('size c#/')]
+                all_above_tls_1_2 = ('TLS_1.3', 'TLS_1.4', 'SSL_3.254',
+                                     'SSL_4.0', 'SSL_4.3', 'SSL_255.255')
+                if all(i in size_intol for i in all_above_tls_1_2):
+                    for i in all_above_tls_1_2:
+                        size_intol.remove(i)
+                    size_intol.append('TLS_1.3+')
+                all_above_ssl_4_0 = ('SSL_4.3', 'SSL_4.0', 'SSL_255.255')
+                if all(i in size_intol for i in all_above_ssl_4_0):
+                    for i in all_above_ssl_4_0:
+                        size_intol.remove(i)
+                    size_intol.append("SSL_4.0+")
                 if size_intol:
                     size_intol.sort(reverse=True)
                     tempimpl_families[" ".join(size_intol)] = 1
