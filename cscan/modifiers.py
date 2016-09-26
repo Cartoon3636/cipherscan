@@ -310,14 +310,15 @@ def extra_sig_algs(generator):
 
     present = set(ext.sigalgs)
 
-    ext.sigalgs.extend(i for i
-                       in [(HashAlgorithm.none, SignatureAlgorithm.ecdsa),
-                           (HashAlgorithm.none, 4),
-                           (HashAlgorithm.sha256, 4),
-                           (7, SignatureAlgorithm.anonymous),
-                           (7, SignatureAlgorithm.ecdsa),
-                           (7, 4)]
-                       if i not in present)
+    to_add = list(i for i
+                  in [(HashAlgorithm.none, SignatureAlgorithm.ecdsa),
+                      (HashAlgorithm.none, 4),
+                      (HashAlgorithm.sha256, 4),
+                      (7, SignatureAlgorithm.anonymous),
+                      (7, SignatureAlgorithm.ecdsa),
+                      (7, 4)]
+                  if i not in present)
+    ext.sigalgs[:] = to_add + ext.sigalgs
 
     generator.modifications += ["more sigalgs"]
     return generator
@@ -335,13 +336,14 @@ def extra_groups(generator):
 
     present = set(ext.groups)
 
-    ext.groups.extend(i for i in
-                      itertools.chain(GroupName.allFF,
-                                      [GroupName.brainpoolP256r1,
-                                       GroupName.brainpoolP384r1,
-                                       GroupName.brainpoolP512r1],
-                                      [0xcaca, 0xdada])
-                      if i not in present)
+    to_add = list(i for i in
+                  itertools.chain(GroupName.allFF,
+                                  [GroupName.brainpoolP256r1,
+                                   GroupName.brainpoolP384r1,
+                                   GroupName.brainpoolP512r1],
+                                  [0xcaca, 0xdada])
+                  if i not in present)
+    ext.groups[:] = to_add + ext.groups
     generator.modifications += ["more groups"]
     return generator
 
