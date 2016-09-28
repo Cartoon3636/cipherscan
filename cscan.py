@@ -23,7 +23,8 @@ from cscan.modifiers import no_sni, set_hello_version, set_record_version, \
         extend_with_ext_to_size, add_empty_ext, add_one_to_pad_extension, \
         set_extensions_to_size, append_ciphers_to_number, leave_only_ext, \
         ext_id_to_short_name, no_empty_last_ext, extra_sig_algs, \
-        extra_groups, add_compressions_to_number
+        extra_groups, add_compressions_to_number, make_secure_renego_ext, \
+        make_secure_renego_scsv
 from cscan.bisector import Bisect
 
 
@@ -75,6 +76,25 @@ def simple_inspector(result):
                 return False
             return True
     # incomplete response or error
+    return False
+
+
+def simple_renego_inspector(result):
+    """
+    Perform simple check to see if server supports secure renego indication.
+
+    Returns True if connection supports secure rengotiation on top of checks
+    performed by simple_inspector()
+    """
+    if not simple_inspector(result):
+        return False
+    # check if renegotiation info is returned by server and valid
+    sh = next((x for x in result if isinstance(x, ServerHello)), None)
+    if sh and sh.extensions:
+        ext = next((i for i in sh.extensions
+                    if i.extType == ExtensionType.renegotiation_info), None)
+        if ext and ext.extData == bytearray(1):
+            return True
     return False
 
 
@@ -389,6 +409,31 @@ def scan_TLS_intolerancies(host, port, hostname):
                 all(conf_iterator(last_ext_not_empty)):
         intolerancies["last ext empty"] = False
 
+    # check if secure renego is supported correctly:
+    all(conf_iterator(lambda conf:
+                      conf.version >= (3, 1) and
+                      (CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV in
+                       conf.ciphers
+                       or conf.extensions and
+                         any(i.extType == ExtensionType.renegotiation_info
+                             for i in conf.extensions))))
+    good_conf = next((configs[name] for name, result in results.items()
+                      if simple_renego_inspector(result) and
+                      result[0].client_version >= (3, 1)), None)
+    if good_conf:
+        secure_ext_gen = make_secure_renego_ext(copy.deepcopy(good_conf))
+        secure_scsv_gen = make_secure_renego_scsv(copy.deepcopy(good_conf))
+        secure_ext = simple_renego_inspector(scan_with_config(host, port,
+            secure_ext_gen, hostname))
+        secure_scsv = simple_renego_inspector(scan_with_config(host, port,
+            secure_scsv_gen, hostname))
+        if secure_ext and secure_scsv:
+            intolerancies["secure renego"] = False
+        else:
+            intolerancies["secure renego ext"] = not secure_ext
+            intolerancies["secure renego scsv"] = not secure_scsv
+
+    # basic bisector callback
     def test_cb(client_hello):
         ret = scan_with_config(host, port, lambda _:client_hello, hostname)
         return simple_inspector(ret)
