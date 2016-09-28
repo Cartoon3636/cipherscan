@@ -5,7 +5,8 @@
 from __future__ import print_function
 from cscan.constants import CipherSuite, ExtensionType, HashAlgorithm, \
         SignatureAlgorithm
-from tlslite.extensions import SNIExtension, PaddingExtension, TLSExtension
+from tlslite.extensions import SNIExtension, PaddingExtension, TLSExtension, \
+        RenegotiationInfoExtension
 from tlslite.constants import GroupName
 import itertools
 
@@ -360,4 +361,58 @@ def add_compressions_to_number(generator, num):
                                                           compress_to_add))
 
     generator.modifications += ["more comp mthds"]
+    return generator
+
+def make_secure_renego_ext(generator):
+    """
+    Add secure renegotiation indication extension.
+
+    If secure renegotiation is a SCSV make it an extension, if it's an
+    extension place it last in list of extensions
+    """
+    if not generator.extensions:
+        generator.extensions = []
+    exts = generator.extensions
+    ext = next((i for i in exts
+                if i.extType == ExtensionType.renegotiation_info), None)
+    if exts and ext is exts[-1]:
+        return generator
+
+    try:
+        generator.ciphers.remove(CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV)
+    except ValueError:
+        pass
+
+    if ext is not None:
+        exts.remove(ext)
+    ext = RenegotiationInfoExtension().create(bytearray())
+    exts.append(ext)
+    generator.modifications.append("secure renego ext")
+    return generator
+
+def make_secure_renego_scsv(generator):
+    """
+    Add secure renegotiation indication signalling cipher suite value.
+
+    If secure renegotiation ext is present, remove it, add an SCSV in its
+    place
+    """
+    ext = next((i for i in generator.extensions
+                if i.extType == ExtensionType.renegotiation_info), None) \
+          if generator.extensions else None
+    if CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV in generator.ciphers \
+            and ext is None:
+        return generator
+
+    if generator.extensions:
+        generator.extensions[:] = (i for i in generator.extensions
+                                   if i.extType !=
+                                      ExtensionType.renegotiation_info)
+    if CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV not in generator.ciphers:
+        generator.ciphers.append(CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV)
+
+    if not generator.extensions:
+        generator.extensions = None
+
+    generator.modifications.append("secure renego scsv")
     return generator

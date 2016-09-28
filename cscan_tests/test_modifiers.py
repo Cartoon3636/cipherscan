@@ -6,10 +6,12 @@ try:
 except ImportError:
     import unittest
 
-from cscan.config import Xmas_tree, Firefox_42
+from cscan.config import Xmas_tree, Firefox_42, Firefox_46, VeryCompatible
 from cscan.modifiers import truncate_ciphers_to_size, append_ciphers_to_size, \
         extend_with_ext_to_size, append_ciphers_to_number, \
-        set_extensions_to_size
+        set_extensions_to_size, make_secure_renego_ext, \
+        make_secure_renego_scsv
+from cscan.constants import ExtensionType, CipherSuite
 
 class TestTruncateCiphersToSize(unittest.TestCase):
     def test_with_big_hello(self):
@@ -72,3 +74,67 @@ class TestSetExtensionsToSize(unittest.TestCase):
         gen = set_extensions_to_size(Firefox_42(), 0xffff)
 
         self.assertEqual(len(gen(b'example.com').write()), 65602)
+
+
+class TestMakeSecureRenegoExt(unittest.TestCase):
+    def test_with_ext_not_last(self):
+        gen = Firefox_46()
+
+        self.assertNotEqual(gen.extensions[-1].extType,
+                            ExtensionType.renegotiation_info)
+        self.assertNotIn(CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV,
+                         gen.ciphers)
+
+        gen = make_secure_renego_ext(gen)
+
+        self.assertEqual(gen.extensions[-1].extType,
+                         ExtensionType.renegotiation_info)
+        self.assertNotIn(CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV,
+                         gen.ciphers)
+
+    def test_with_scsv(self):
+        gen = VeryCompatible()
+
+        self.assertNotIn(ExtensionType.renegotiation_info,
+                         [i.extType for i in gen.extensions])
+        self.assertIn(CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV,
+                      gen.ciphers)
+
+        gen = make_secure_renego_ext(gen)
+
+        self.assertEqual(gen.extensions[-1].extType,
+                         ExtensionType.renegotiation_info)
+        self.assertNotIn(CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV,
+                         gen.ciphers)
+
+
+class TestMakeSecureRenegoScsv(unittest.TestCase):
+    def test_with_ext(self):
+        gen = Firefox_46()
+
+        self.assertIn(ExtensionType.renegotiation_info,
+                      [i.extType for i in gen.extensions])
+        self.assertNotIn(CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV,
+                         gen.ciphers)
+
+        gen = make_secure_renego_scsv(gen)
+
+        self.assertIn(CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV,
+                      gen.ciphers)
+        self.assertNotIn(ExtensionType.renegotiation_info,
+                         [i.extType for i in gen.extensions])
+
+    def test_with_scsv(self):
+        gen = VeryCompatible()
+
+        self.assertNotIn(ExtensionType.renegotiation_info,
+                         [i.extType for i in gen.extensions])
+        self.assertIn(CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV,
+                      gen.ciphers)
+
+        gen = make_secure_renego_scsv(gen)
+
+        self.assertIn(CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV,
+                      gen.ciphers)
+        self.assertNotIn(ExtensionType.renegotiation_info,
+                         [i.extType for i in gen.extensions])
