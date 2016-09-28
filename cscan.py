@@ -666,8 +666,8 @@ def scan_TLS_intolerancies(host, port, hostname):
                                        hostname)
                 return simple_renego_inspector(ret)
 
-            if not ('secure renego ext' in intolerancies and
-                    intolerancies["secure renego ext"]):
+            if good_renego_conf and not ('secure renego ext' in intolerancies
+                    and intolerancies["secure renego ext"]):
                 size_max_gen = extend_with_exts_to_size(copy.deepcopy(secure_ext_gen),
                                                        65536)
                 size_max_scan = scan_with_config(host, port,
