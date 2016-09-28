@@ -461,6 +461,7 @@ def scan_TLS_intolerancies(host, port, hostname):
     good_conf = next((configs[name] for name, result in results.items()
                       if simple_inspector(result)), None)
 
+    cipher_num_intolerance = None
     if good_conf:
         size_c_16382 = simple_inspector(scan_with_config(host, port,
             append_ciphers_to_size(copy.deepcopy(good_conf), 16382), hostname))
@@ -501,12 +502,13 @@ def scan_TLS_intolerancies(host, port, hostname):
             intolerancies["size c/{0}".format(max(len(good_h.write()),
                                                   len(good_h2.write())))] = False
             intolerancies["size c#/{0}".format(len(bad_h.cipher_suites))] = True
+            cipher_num_intolerance = len(bad_h.cipher_suites)
             intolerancies["size c#/{0}".format(len(good_h.cipher_suites))] = False
 
     # test extension size intolerance, again, most lie between 16385
     # and 16389 so short-circuit if possible
-    if not ('size c#/129' in intolerancies and
-            intolerancies["size c#/129"] and \
+    if not ('size c#/129' in intolerancies or
+            cipher_num_intolerance and cipher_num_intolerance < 600 and \
             intolerancies["TLS 1.3"] and not intolerancies["TLS 1.2"] and \
             not intolerancies["extensions"]):
         good_conf = next((configs[name] for name, result in results.items()
