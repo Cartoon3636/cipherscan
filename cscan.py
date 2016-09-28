@@ -24,7 +24,7 @@ from cscan.modifiers import no_sni, set_hello_version, set_record_version, \
         set_extensions_to_size, append_ciphers_to_number, leave_only_ext, \
         ext_id_to_short_name, no_empty_last_ext, extra_sig_algs, \
         extra_groups, add_compressions_to_number, make_secure_renego_ext, \
-        make_secure_renego_scsv
+        make_secure_renego_scsv, extend_with_exts_to_size
 from cscan.bisector import Bisect
 
 
@@ -417,12 +417,12 @@ def scan_TLS_intolerancies(host, port, hostname):
                        or conf.extensions and
                          any(i.extType == ExtensionType.renegotiation_info
                              for i in conf.extensions))))
-    good_conf = next((configs[name] for name, result in results.items()
-                      if simple_renego_inspector(result) and
-                      result[0].client_version >= (3, 1)), None)
-    if good_conf:
-        secure_ext_gen = make_secure_renego_ext(copy.deepcopy(good_conf))
-        secure_scsv_gen = make_secure_renego_scsv(copy.deepcopy(good_conf))
+    good_renego_conf = next((configs[name] for name, result in results.items()
+                            if simple_renego_inspector(result) and
+                            result[0].client_version >= (3, 1)), None)
+    if good_renego_conf:
+        secure_ext_gen = make_secure_renego_ext(copy.deepcopy(good_renego_conf))
+        secure_scsv_gen = make_secure_renego_scsv(copy.deepcopy(good_renego_conf))
         secure_ext = simple_renego_inspector(scan_with_config(host, port,
             secure_ext_gen, hostname))
         secure_scsv = simple_renego_inspector(scan_with_config(host, port,
@@ -657,6 +657,30 @@ def scan_TLS_intolerancies(host, port, hostname):
                         bad_len = len(bad_h.write())
                     intolerancies["size {0}".format(bad_len)] = True
                     intolerancies["size {0}".format(good_len)] = False
+
+            # check for intolerance to number of extensions
+            def test_renego_cb(client_hello):
+                assert any(i.extType == ExtensionType.renegotiation_info
+                           for i in client_hello.extensions)
+                ret = scan_with_config(host, port, lambda _:client_hello,
+                                       hostname)
+                return simple_renego_inspector(ret)
+
+            if not ('secure renego ext' in intolerancies and
+                    intolerancies["secure renego ext"]):
+                size_max_gen = extend_with_exts_to_size(copy.deepcopy(secure_ext_gen),
+                                                       65536)
+                size_max_scan = scan_with_config(host, port,
+                                                 size_max_gen, hostname)
+                size_max = simple_renego_inspector(size_max_scan)
+                if size_max:
+                    intolerancies["size e#/{0}".format(len(size_max_scan[0].extensions))] = False
+                else:
+                    bisect = Bisect(secure_ext_gen, size_max_gen, hostname,
+                                    test_renego_cb)
+                    good_h, bad_h = bisect.run()
+                    intolerancies["size e#/{0}".format(len(good_h.extensions))] = False
+                    intolerancies["size e#/{0}".format(len(bad_h.extensions))] = True
 
     if json_out:
         print(json.dumps(intolerancies))

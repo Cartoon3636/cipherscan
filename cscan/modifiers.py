@@ -416,3 +416,29 @@ def make_secure_renego_scsv(generator):
 
     generator.modifications.append("secure renego scsv")
     return generator
+
+def extend_with_exts_to_size(generator, size):
+    """
+    Add extensions so that the Hello is at least `size` bytes
+
+    Adds the extensions at the beginning of the list of extensions
+    """
+
+    def cb_fun(client_hello, size=size):
+        if len(client_hello.write()) > size:
+            return client_hello
+        if not client_hello.extensions:
+            client_hello.extensions = []
+        present = set(i.extType for i in client_hello.extensions)
+        bytes_to_add = size - len(client_hello.write())
+        if bytes_to_add > 0:
+            client_hello.extensions[:] = list(itertools.islice((
+                                                TLSExtension(extType=i) for i in
+                                                range(64, 0xffff)
+                                                if i not in present),
+                                                bytes_to_add // 4)) + \
+                                         client_hello.extensions
+        return client_hello
+    generator.callbacks.append(cb_fun)
+    generator.modifications += ["append e#/{0}".format(size)]
+    return generator
