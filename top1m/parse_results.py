@@ -111,6 +111,7 @@ tickethint = defaultdict(int)
 eccfallback = defaultdict(int)
 eccordering = defaultdict(int)
 ecccurve = defaultdict(int)
+npn = defaultdict(int)
 ocspstaple = defaultdict(int)
 fallbacks = defaultdict(int)
 intolerancies = defaultdict(int)
@@ -176,6 +177,7 @@ for r,d,flist in os.walk(path):
         tempeccfallback = "unknown"
         tempeccordering = "unknown"
         tempecccurve = {}
+        tempnpn = {}
         tempfallbacks = {}
         tempintolerancies = {}
         tempimpl_families = {}
@@ -534,6 +536,13 @@ for r,d,flist in os.walk(path):
                     elif protocol == 'TLSv1.2':
                         TLS1_2 = True
 
+                # save NPN protocols supported
+                if 'npn' in entry:
+                    for proto in entry['npn']:
+                        tempnpn[proto] = 1
+                    if len(entry['npn']) == 1:
+                        tempnpn[proto + ' Only'] = 1
+
                 """ save ECC curves stats """
                 if 'curves_ordering' in entry:
                     tempeccordering = entry['curves_ordering']
@@ -632,6 +641,9 @@ for r,d,flist in os.walk(path):
         eccordering[tempeccordering] += 1
         for s in tempecccurve:
             ecccurve[s] += 1
+
+        for s in tempnpn:
+            npn[s] += 1
 
         if ocsp_stapling is None:
             ocspstaple['Unknown'] += 1
@@ -835,6 +847,12 @@ print("-------------------------+---------+-------")
 for stat in sorted(handshakestats):
     percent = round(handshakestats[stat] / total * 100, 4)
     sys.stdout.write(stat.ljust(25) + " " + str(handshakestats[stat]).ljust(10) + str(percent).ljust(4) + "\n")
+
+print("\nSupported NPN protocols   Count    Percent ")
+print("-------------------------+---------+--------")
+for name, val in sorted(npn.items()):
+    percent = round(val / total * 100, 4)
+    sys.stdout.write(name.ljust(25) + " " + str(val).ljust(10) + str(percent).ljust(9) + "\n")
 
 print("\nSupported PFS             Count     Percent  PFS Percent")
 print("-------------------------+---------+--------+-----------")
